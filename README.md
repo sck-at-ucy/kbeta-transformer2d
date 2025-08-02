@@ -1,4 +1,4 @@
-[![CI (macOS arm64)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml)
+[![CI (macOS arm64)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml)
 # kbeta-transformer2d – *Trainining a 2D Data-driven Transformer using Kourkoutas‑β Optimiser*   🌞🦎🚀📈
 
 > **Research code for our upcoming paper
