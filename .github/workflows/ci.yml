@@ -3,19 +3,21 @@ on: [push, pull_request]
 
 jobs:
   test:
-    runs-on: macos-14
+    runs-on: macos-14          # Metal / MLX
     steps:
-      - uses: actions/checkout@v4         # 1) this repo
-      - uses: actions/checkout@v4         # 2) kbeta
+      - uses: actions/checkout@v4          # checkout THIS repo
+
+      # checkout the private dependency repo
+      - uses: actions/checkout@v4
         with:
           repository: sck-at-ucy/kbeta
-          token: ${{ secrets.CI_PAT }}    # read‑only PAT stored in repo secrets
-          path: kbeta                     # checkout into ./kbeta
+          token: ${{ secrets.CI_PAT }}     # ← add this line
+          path: kbeta
 
       - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
+        with: {python-version: '3.11'}
 
       - run: python -m pip install --upgrade pip
-      - run: pip install -e ./kbeta[dev]      # install dependency
-      - run: pip install -e ".[dev]"          # install transformer2d itself
+      - run: pip install -e ./kbeta[dev]   # install dependency
+      - run: pip install -e ".[dev]"       # install project under test
       - run: python -m pytest -q
