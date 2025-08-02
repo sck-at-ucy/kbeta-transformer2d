@@ -12,7 +12,8 @@ requires-python = ">=3.9"
 dependencies    = ["mlx", "numpy"]
 
 [project.optional-dependencies]
-dev = ["pytest", "ruff", "build", "kbeta @ git+https://github.com/sck-at-ucy/kbeta.git@dev"]
+dev = ["pytest", "ruff", "build"]
+#dev = ["pytest", "ruff", "build", "kbeta @ git+https://github.com/sck-at-ucy/kbeta.git@dev"]
 #dev = ["pytest", "ruff", "build", "kbeta @ file:///Users/m2/PycharmProjects/kbeta"]
 #dev = [
 #    # use the main branch (public) – adjust if private
