@@ -1,0 +1,82 @@
+# configs/heat2d.yml
+seed: 50
+geometry:
+  rod_length: 1.0
+  rod_width: 1.0
+  dx: 0.04
+  dy: 0.04
+boundary_conditions:
+  left_limits: [0, 1]
+  right_limits: [0, 1]
+  top_limits: [0, 1]
+  bottom_limits: [0, 0.1]
+thermal_diffusivity:
+  alpha_limits: [0.01, 0.1]
+model_params:
+  start_predicting_from: 5
+  batch_size: 4
+  epochs: 10
+  time_steps: 401
+  num_heads: 16
+  num_encoder_layers: 24
+  mlp_dim: 256
+  embed_dim: 512
+  mask_type: block
+learning_rate_schedule:
+  5: 1.0e-3
+  30: 5.0e-4
+  40: 1.0e-4
+  60: 1.0e-5
+  120: 1.0e-6
+scale_schedule:
+  0:   0.0
+  10:  0.05
+  20:  0.0
+  30:  0.05
+  40:  0.0
+  50:  0.01
+  60:  0.0
+  70:  0.005
+  80:  0.0
+  90:  0.0001
+  100: 0.0
+  110: 0.00001
+  120: 0.0
+run_label: run_permute_quant_builtin_rope_Kourkoub1
+boundary_segment_strategy: base_case
+training_samples: 4000
+start_from_scratch: true
+checkpoint_epoch: null
+current_epoch: null
+save_checkpoints: false
+compare_current_loaded: false
+configuration_dump: false
+io_and_plots:
+  plots:
+    movie_frames: false
+    num_examples: 20
+  model_saving: true
+# ─────────────────────────────────────────────────────────
+# evaluation‑specific settings
+eval:
+  # number of frames predicted in one shot before we
+  # “feed them back” in the self‑regressive evaluation
+  n_replace: 5          # ← formerly the hard‑coded constant
+
+  # how many initial frames are treated as “given” and
+  # excluded from some loss terms
+  n_initial_frames: 5   # ← replaces several literal 5’s
+
+  # any other evaluation‑time knobs can live here too
+  batch_size_override: null   # e.g. set to an int to force a smaller test batch
+# ─────────────────────────────────────────────────────────
+
+optimizer:
+  name: kourkoutas          # adam95 | adam999 | kourkoutas
+  kour_diagnostics: true    # enables snapshot_diagnostics()
+  beta2_min: 0.88
+  beta2_max: 0.999
+  alpha: 0.93
+  init_lr: 1.0e-3
+  target_lr: 1.0e-5
+  ramp_steps: 40000
