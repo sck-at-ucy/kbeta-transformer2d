@@ -1,0 +1,21 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: macos-14   # Metal backend for MLX
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - run: python -m pip install --upgrade pip
+
+      # ---- project install – pick ONE of the three variants above ----
+      - run: pip install -e ".[dev]"              # ← variant 1
+      # - run: pip install -e . && pip install pytest kbeta@...   # ← variant 2
+      # - run: pip install -e . && pip install kbeta==0.0.0a0 ... # ← variant 3
+
+      - run: python -m pytest -q
