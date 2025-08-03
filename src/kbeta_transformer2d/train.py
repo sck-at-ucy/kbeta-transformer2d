@@ -3,23 +3,27 @@
 Training / validation / evaluation loops"""
 
 from __future__ import annotations
-from typing import Dict, Any, Tuple
-import time, os
-import mlx.core as mx, mlx.nn as nn
+
+import os
+import time
+from typing import Any, Dict
+
+import mlx.core as mx
+import mlx.nn as nn
 import numpy as np
-from .model import loss_fn_2D
 
 __all__ = [
     "train_and_validate",
-    "train_and_validate_compact",
     "evaluate_model",
     "evaluate_model_block_sequence",
     "evaluate_self_regressive_model_BeyondL",
-    "make_train_step",
+    "make_train_and_eval_steps",
 ]
 
 from functools import partial
+
 import matplotlib.pyplot as plt
+
 from .io_utils import save_model_and_optimizer  # now explicit
 
 

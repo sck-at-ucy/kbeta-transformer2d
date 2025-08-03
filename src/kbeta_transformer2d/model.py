@@ -2,9 +2,9 @@
 """HeatDiffusionModel & losses"""
 
 from __future__ import annotations
-from typing import Tuple, Dict
-import mlx.core as mx, mlx.nn as nn
-import numpy as np
+
+import mlx.core as mx
+import mlx.nn as nn
 
 __all__ = [
     "HeatDiffusionModel",

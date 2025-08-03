@@ -5,11 +5,14 @@ Only Apple‑MLX tensors are used – *never* MXNet.
 """
 
 from __future__ import annotations
-from typing import Dict, Any, Tuple
-import mlx.core as mx, mlx.optimizers as optim
+
+from typing import Any, Dict, Tuple
+
+import mlx.core as mx
+import mlx.optimizers as optim
+from kbeta.optim import KourkoutasSoftmaxFlex
 
 from .model import HeatDiffusionModel
-from kbeta.optim import KourkoutasSoftmaxFlex
 
 
 # ---------------------------------------------------------------------

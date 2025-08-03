@@ -57,6 +57,12 @@ extend-select = [
 ]
 ignore = ["E501"]     # example: ignore long lines
 
+#[tool.ruff.lint]
+#ignore = [
+#  "E402",  # module‑level import not at top – benign in scripts
+#  "UP006", "UP035", "UP045",  # typing modernisation – nice to have
+#]
+
 [tool.setuptools.packages.find]
 where   = ["src"]
 include = ["kbeta_transformer2d*"]

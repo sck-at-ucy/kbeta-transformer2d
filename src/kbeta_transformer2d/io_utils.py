@@ -2,10 +2,10 @@
 """Generic path helpers – no ML logic."""
 
 from __future__ import annotations
+
+import json
 import os
-import mlx as mx
-import pickle, json
-from pathlib import Path
+import pickle
 from typing import Tuple
 
 __all__ = ["setup_save_directories", "setup_load_directories"]
@@ -223,7 +223,7 @@ def load_model_and_optimizer(
             loaded_random_state = pickle.load(f)
 
         # Load training configuration
-        with open(config_file_path, "r") as json_file:
+        with open(config_file_path) as json_file:
             loaded_config = json.load(json_file)
             # config = loaded_config
 

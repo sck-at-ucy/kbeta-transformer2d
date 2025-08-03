@@ -1,12 +1,11 @@
 # transformer/utils.py
 from __future__ import annotations
 
-# ── third‑party -----------------------------------------------------------
-import numpy as np  # needed by compare_* helpers
+# ── std‑lib (optional, but handy for type hints) --------------------------
 import mlx.core as mx  # needed by compute_average_var
 
-# ── std‑lib (optional, but handy for type hints) --------------------------
-from typing import Any, Dict, List, Tuple
+# ── third‑party -----------------------------------------------------------
+import numpy as np  # needed by compare_* helpers
 
 
 def get_learning_rate_for_epoch(epoch, schedule):

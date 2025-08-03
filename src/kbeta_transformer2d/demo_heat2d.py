@@ -17,21 +17,20 @@ import sys
 print(">>> entering Testing_Kourkoutasb_tmp, argv:", sys.argv)
 
 # ── standard lib ───────────────────────────────────────────────────────────
-import argparse, json, os, pickle, socket, sys, time
+import argparse
+import json
+import os
+import socket
+import sys
 from pathlib import Path
-from typing import Dict, Any, List, Optional
-import yaml
-import numpy as np
-import mlx.core as mx
-import mlx.nn as nn
-import mlx.optimizers as optim
-from functools import partial
 
 # ── local project imports (leave unchanged) ───────────────────────────────
-from kbeta.optim import KourkoutasSoftmaxFlex
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-
-from typing import TYPE_CHECKING, Optional
+import mlx.core as mx
+import mlx.optimizers as optim
+import numpy as np
+import yaml
 
 if TYPE_CHECKING:             # only seen by static analyzers
     model:  HeatDiffusionModel
@@ -165,49 +164,44 @@ def build_config() -> Dict[str, Any]:
 # =========================================================================
 
 
-from .io_utils import (
-    setup_save_directories,
-    setup_load_directories,
-    save_model_and_optimizer,
-    load_model_and_optimizer,
-)
 from .data import (
-    initialize_geometry_and_bcs,
-    generate_datasets,
-    save_datasets,
-    load_datasets,
     data_loader_2D,
+    generate_datasets,
+    initialize_geometry_and_bcs,
+    load_datasets,
+    save_datasets,
 )
-
-from .optim_factory import initialize_model_and_optimizer
-
-
+from .io_utils import (
+    load_model_and_optimizer,
+    save_model_and_optimizer,
+    setup_load_directories,
+    setup_save_directories,
+)
 from .model import loss_fn_2D
+from .optim_factory import initialize_model_and_optimizer
+from .plot_utils import (
+    plot_mse_evolution,
+    plot_predictions_2D,
+    plot_regressive_predictions_2D,
+    save_distribution_density_heatmap,
+    save_distribution_violin_plot,
+)
 
 # from .train import (train_and_validate, evaluate_model,evaluate_model_block_sequence)
 from .train import (
-    train_and_validate,
     evaluate_model,
     evaluate_model_block_sequence,
     evaluate_self_regressive_model_BeyondL,  # todo: <----- Need to fix so that it does need matplotlib in train.py
     make_train_and_eval_steps,  # <- we’ll create these two helpers in train.py
+    train_and_validate,
 )
-
 from .utils import (
     compare_datasets,
-    print_fresh_run_config,
-    convert_lists_to_tuples,
-    compare_list_states,
     compare_dict_states,
+    compare_list_states,
+    convert_lists_to_tuples,
     print_config_comparison,
-)
-
-from .plot_utils import (
-    save_distribution_violin_plot,
-    save_distribution_density_heatmap,
-    plot_regressive_predictions_2D,
-    plot_predictions_2D,
-    plot_mse_evolution,
+    print_fresh_run_config,
 )
 
 

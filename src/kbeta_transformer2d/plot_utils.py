@@ -2,14 +2,12 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # High‑level plotting utilities for the cylindrical‑PINN demo
 # ─────────────────────────────────────────────────────────────────────────────
-import math
-from pathlib import Path
-from typing import Sequence
+
+import os
 
 import matplotlib.pyplot as plt
-import numpy as np
 import mlx.core as mx
-import os
+import numpy as np
 
 
 def plot_sunspike_histogram(sunspike_list, epoch_idx, bins=50):
@@ -111,9 +109,10 @@ def save_distribution_violin_plot_old(
     None
     """
     import os
+
+    import matplotlib.pyplot as plt
     import pandas as pd
     import seaborn as sns
-    import matplotlib.pyplot as plt
 
     os.makedirs(outdir, exist_ok=True)
 
@@ -159,8 +158,11 @@ def save_distribution_violin_plot(
     """
     Violin plot of per‑epoch distributions with baseline & median overlay.
     """
-    import os, pandas as pd, numpy as np
-    import matplotlib.pyplot as plt, seaborn as sns
+    import os
+
+    import matplotlib.pyplot as plt
+    import pandas as pd
+    import seaborn as sns
 
     os.makedirs(outdir, exist_ok=True)
 
@@ -326,7 +328,6 @@ def save_distribution_density_heatmap(
     print(f"Density heatmap saved to {outfile}")
 
 
-from .train import train_and_validate, evaluate_model
 
 
 def plot_predictions_2D(
@@ -575,8 +576,8 @@ def plot_model_weights(model, epoch):
         The function generates and saves heatmaps of the weight statistics (mean, max, and counts above thresholds)
         but does not return any value.
     """
-    import seaborn as sns
     import matplotlib.pyplot as plt
+    import seaborn as sns
 
     # Set the model to evaluation mode
     model.eval()
