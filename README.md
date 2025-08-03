@@ -8,7 +8,7 @@
 
 ## Table of Contents
 1. [Why a 2‑D Transformer?](#why-a-2d-transformer)
-2. [Model highlights](#Model highlights – what’s special about **HeatDiffusion‑Transformer‑2D*)
+2. [Model highlights](#model highlights – what’s special about **HeatDiffusion‑Transformer‑2D*)
 3. [Project layout](#project-layout)
 4. [Quick start](#quick-start)
 5. [Training from scratch](#training-from-scratch)
