@@ -1,5 +1,5 @@
-#transformer/train.py
-"""file start: train.py 
+# transformer/train.py
+"""file start: train.py
 Training / validation / evaluation loops"""
 
 from __future__ import annotations
@@ -9,21 +9,28 @@ import mlx.core as mx, mlx.nn as nn
 import numpy as np
 from .model import loss_fn_2D
 
-__all__ = ["train_and_validate", "train_and_validate_compact",
-           "evaluate_model", "evaluate_model_block_sequence",
-           "evaluate_self_regressive_model_BeyondL", "make_train_step"]
-           
+__all__ = [
+    "train_and_validate",
+    "train_and_validate_compact",
+    "evaluate_model",
+    "evaluate_model_block_sequence",
+    "evaluate_self_regressive_model_BeyondL",
+    "make_train_step",
+]
+
 from functools import partial
 import matplotlib.pyplot as plt
 from .io_utils import save_model_and_optimizer  # now explicit
+
 
 def make_train_and_eval_steps(model, optimizer, loss_fn, n_initial, *, dx, dy):
     state = [model.state, optimizer.state, mx.random.state]
 
     @partial(mx.compile, inputs=state, outputs=state)
     def _train_step(src, target, src_alphas, src_dts, dx, dy):
-        loss, grads = nn.value_and_grad(model, loss_fn)(model,
-                                                        src, target, n_initial, src_alphas, src_dts, dx, dy)
+        loss, grads = nn.value_and_grad(model, loss_fn)(
+            model, src, target, n_initial, src_alphas, src_dts, dx, dy
+        )
         optimizer.update(model, grads)
         return loss
 
@@ -35,16 +42,30 @@ def make_train_and_eval_steps(model, optimizer, loss_fn, n_initial, *, dx, dy):
 
 
 # Training and validation function with periodic saving
-def train_and_validate(    model,
+def train_and_validate(
+    model,
     optimizer,
-    train_step,data_loader_2D,
-    evaluate_step, cfg: Dict[str, Any], train_data, train_alphas, train_dts, validation_data, validation_alphas, validation_dts,
-                       batch_size, epochs, start_epoch, save_interval,
-                        save_dir_path,                      # ← new
-                        model_base_file_name,               # ← new
-                        optimizer_base_file_name,           # ← new
-                        hyper_base_file_name,               # ← new
-                        dx, dy):
+    train_step,
+    data_loader_2D,
+    evaluate_step,
+    cfg: Dict[str, Any],
+    train_data,
+    train_alphas,
+    train_dts,
+    validation_data,
+    validation_alphas,
+    validation_dts,
+    batch_size,
+    epochs,
+    start_epoch,
+    save_interval,
+    save_dir_path,  # ← new
+    model_base_file_name,  # ← new
+    optimizer_base_file_name,  # ← new
+    hyper_base_file_name,  # ← new
+    dx,
+    dy,
+):
     """
     Trains and validates a 2D heat diffusion model over a specified number of epochs.
 
@@ -102,86 +123,102 @@ def train_and_validate(    model,
     # optimizer.learning_rate = get_learning_rate_for_epoch(start_epoch, learning_rate_schedule)
 
     tic = time.perf_counter()
-    print(f'start_epoch: {start_epoch} epochs: {epochs} learning_rate: {optimizer.learning_rate}')
-
+    print(
+        f"start_epoch: {start_epoch} epochs: {epochs} learning_rate: {optimizer.learning_rate}"
+    )
 
     for epoch in range(start_epoch, epochs):
         if epoch in cfg.get("learning_rate_schedule", {}):
-             optimizer.learning_rate = cfg["learning_rate_schedule"][epoch]
+            optimizer.learning_rate = cfg["learning_rate_schedule"][epoch]
         if epoch in cfg.get("scale_schedule", {}):
-             optimizer.scale = cfg["scale_schedule"][epoch]
-
+            optimizer.scale = cfg["scale_schedule"][epoch]
 
         total_train_loss = 0
         num_train_batches = 0
 
-        for src, target, src_alphas, src_dts in data_loader_2D(train_data, train_alphas, train_dts, batch_size,
-                                                               shuffle=True):
-            loss  = train_step(src, target, src_alphas, src_dts, dx, dy)
+        for src, target, src_alphas, src_dts in data_loader_2D(
+            train_data, train_alphas, train_dts, batch_size, shuffle=True
+        ):
+            loss = train_step(src, target, src_alphas, src_dts, dx, dy)
             total_train_loss += loss.item()
             num_train_batches += 1
             mx.eval(model, optimizer.state)
-
 
         total_val_loss = 0
         num_val_batches = 0
         model.eval()
 
-        for src, target, src_alphas, src_dts in data_loader_2D(validation_data, validation_alphas, validation_dts,
-                                                               batch_size, shuffle=False):
+        for src, target, src_alphas, src_dts in data_loader_2D(
+            validation_data,
+            validation_alphas,
+            validation_dts,
+            batch_size,
+            shuffle=False,
+        ):
             val_loss = evaluate_step(src, target, src_alphas, src_dts, dx, dy)
             total_val_loss += val_loss.item()
             num_val_batches += 1
 
-        #average_spk = optimizer.report_avg_sunspike()
+        # average_spk = optimizer.report_avg_sunspike()
         average_spk = None
 
-
         print(
-            f'Epoch {epoch + 1}, lr: {optimizer.learning_rate}, '
-            f'Training Loss: {total_train_loss / num_train_batches}, '
-            f'Validation Loss: {total_val_loss / num_val_batches}, '
-            f'Number of Train batches: {num_train_batches}, '
-            )
+            f"Epoch {epoch + 1}, lr: {optimizer.learning_rate}, "
+            f"Training Loss: {total_train_loss / num_train_batches}, "
+            f"Validation Loss: {total_val_loss / num_val_batches}, "
+            f"Number of Train batches: {num_train_batches}, "
+        )
 
         # inside the epoch loop AFTER validation
         if hasattr(optimizer, "snapshot_diagnostics"):
             # Kourkoutas – rich info available
             diags = optimizer.snapshot_diagnostics()
-            print("   ↳ "
-                    f"denom_min={diags['diag_denom_min']:.2e} | "
-                    f"upd/ρ_max={diags['diag_max_ratio']:.1f} | "
-                    f"upd_norm_max={diags['diag_upd_norm_max']:.1e} | "
-                    f"v̂_max={diags['diag_vhat_max']:.1e}")
-        #else:
-            ## plain Adam
-            #print(f"Epoch {epoch+1:4d} | "
-            #    f"lr={optimizer.learning_rate:.5f} | "
-            #    f"train={total_train_loss/num_train_batches:.3e} | "
-            #    f"val={total_val_loss/num_val_batches:.3e}")
-          
+            print(
+                "   ↳ "
+                f"denom_min={diags['diag_denom_min']:.2e} | "
+                f"upd/ρ_max={diags['diag_max_ratio']:.1f} | "
+                f"upd_norm_max={diags['diag_upd_norm_max']:.1e} | "
+                f"v̂_max={diags['diag_vhat_max']:.1e}"
+            )
+        # else:
+        ## plain Adam
+        # print(f"Epoch {epoch+1:4d} | "
+        #    f"lr={optimizer.learning_rate:.5f} | "
+        #    f"train={total_train_loss/num_train_batches:.3e} | "
+        #    f"val={total_val_loss/num_val_batches:.3e}")
+
         if (epoch + 1) % save_interval == 0:
             mx.eval(model.parameters(), optimizer.state)
             model.eval()
-            save_model_and_optimizer(model, optimizer, mx.random.state, cfg,
-                                        epoch + 1, save_dir_path,
-                                        model_base_file_name, optimizer_base_file_name,
-                                        hyper_base_file_name)
+            save_model_and_optimizer(
+                model,
+                optimizer,
+                mx.random.state,
+                cfg,
+                epoch + 1,
+                save_dir_path,
+                model_base_file_name,
+                optimizer_base_file_name,
+                hyper_base_file_name,
+            )
         model.train()
-        
 
     toc = time.perf_counter()
     tpi = (toc - tic) / 60 / (epochs + 1 - start_epoch)
     print(f"Time per epoch {tpi:.3f} (min)")
 
 
-
-
-
-
-
-
-def evaluate_model(model, evaluate_step, data_loader_func, test_data, test_alphas, test_dts, dx, dy, batch_size):
+def evaluate_model(
+    model,
+    evaluate_step,
+    data_loader_func,
+    test_data,
+    test_alphas,
+    test_dts,
+    dx,
+    dy,
+    batch_size,
+):
     """
     Evaluates the performance of the model on the test dataset and measures inference time.
 
@@ -191,7 +228,9 @@ def evaluate_model(model, evaluate_step, data_loader_func, test_data, test_alpha
     """
     total_loss = 0
     num_batches = 0
-    data_loader = data_loader_func(test_data, test_alphas, test_dts, batch_size, shuffle=False)
+    data_loader = data_loader_func(
+        test_data, test_alphas, test_dts, batch_size, shuffle=False
+    )
 
     # Start timing the inference
     start_time = time.perf_counter()
@@ -206,19 +245,35 @@ def evaluate_model(model, evaluate_step, data_loader_func, test_data, test_alpha
 
     # Calculate the average inference time
     inference_time = end_time - start_time
-    average_inference_time_per_batch = inference_time / num_batches if num_batches > 0 else float('inf')
+    average_inference_time_per_batch = (
+        inference_time / num_batches if num_batches > 0 else float("inf")
+    )
 
     # Print results
-    average_loss = total_loss / num_batches if num_batches > 0 else float('inf')
+    average_loss = total_loss / num_batches if num_batches > 0 else float("inf")
     print(f"Average Test Loss: {average_loss}")
     print(f"Total Inference Time: {inference_time:.4f} seconds")
-    print(f"Average Inference Time per Batch: {average_inference_time_per_batch:.4f} seconds")
+    print(
+        f"Average Inference Time per Batch: {average_inference_time_per_batch:.4f} seconds"
+    )
 
     return average_loss, average_inference_time_per_batch
 
 
-def evaluate_self_regressive_model_BeyondL(model, data_loader_func, test_data, test_alphas, test_dts, dx, dy,
-                                           batch_size, seq_len, n_replace, n_initial, output_dir_regress="./MSE_step_regress"):
+def evaluate_self_regressive_model_BeyondL(
+    model,
+    data_loader_func,
+    test_data,
+    test_alphas,
+    test_dts,
+    dx,
+    dy,
+    batch_size,
+    seq_len,
+    n_replace,
+    n_initial,
+    output_dir_regress="./MSE_step_regress",
+):
     """
     Evaluates the model in a self-regressive manner and tracks MSE for each predicted time step.
 
@@ -265,7 +320,9 @@ def evaluate_self_regressive_model_BeyondL(model, data_loader_func, test_data, t
     if not os.path.exists(output_dir_regress):
         os.makedirs(output_dir_regress)
 
-    data_loader = data_loader_func(test_data, test_alphas, test_dts, batch_size, shuffle=False)
+    data_loader = data_loader_func(
+        test_data, test_alphas, test_dts, batch_size, shuffle=False
+    )
 
     # Initialize MSE tracker for all time steps
     cumulative_mse = np.zeros(seq_len - n_initial)
@@ -283,23 +340,31 @@ def evaluate_self_regressive_model_BeyondL(model, data_loader_func, test_data, t
 
         # Track and accumulate MSE for each time step (starting from t=5)
         for t in range(n_initial, seq_len):
-            mse_loss = nn.losses.mse_loss(prediction[:, t, :, :], target[:, t, :, :], reduction="mean")
-            time_step_mse[t - n_initial] = mse_loss.item()  # Store MSE for the current batch
-            cumulative_mse[t - n_initial] += mse_loss.item()  # Accumulate MSE for this time step
+            mse_loss = nn.losses.mse_loss(
+                prediction[:, t, :, :], target[:, t, :, :], reduction="mean"
+            )
+            time_step_mse[t - n_initial] = (
+                mse_loss.item()
+            )  # Store MSE for the current batch
+            cumulative_mse[t - n_initial] += (
+                mse_loss.item()
+            )  # Accumulate MSE for this time step
 
         num_batches += 1
-        print(f'finished batch: {num_batches}')
+        print(f"finished batch: {num_batches}")
 
     # After looping through all batches:
     # Average the MSE by the number of batches
     average_mse = cumulative_mse / num_batches
     print(f"Average MSE over auto-regressive sequence {average_mse}")
-    
+
     return average_mse
 
     # Plot MSE evolution over time steps
     plt.figure(figsize=(10, 6))
-    plt.plot(range(n_initial, seq_len), average_mse, marker='o', linestyle='-', color='b')
+    plt.plot(
+        range(n_initial, seq_len), average_mse, marker="o", linestyle="-", color="b"
+    )
     plt.xlabel("Time Step")
     plt.ylabel("MSE Loss")
     plt.title("Average MSE Evolution Over Autoregressive Time Steps")
@@ -311,9 +376,19 @@ def evaluate_self_regressive_model_BeyondL(model, data_loader_func, test_data, t
     print(f"MSE for each time step saved in {mse_plot_filename}")
 
 
-
-def evaluate_model_block_sequence(model, data_loader_func, test_data, test_alphas, test_dts, dx, dy,
-                                 batch_size, seq_len, n_initial, output_dir_block="./MSE_step_block"):
+def evaluate_model_block_sequence(
+    model,
+    data_loader_func,
+    test_data,
+    test_alphas,
+    test_dts,
+    dx,
+    dy,
+    batch_size,
+    seq_len,
+    n_initial,
+    output_dir_block="./MSE_step_block",
+):
     """
     Evaluates the model by predicting the entire sequence at once and tracks MSE for each predicted time step.
     This version assumes the model predicts the entire sequence at once (not autoregressively).
@@ -324,7 +399,9 @@ def evaluate_model_block_sequence(model, data_loader_func, test_data, test_alpha
     if not os.path.exists(output_dir_block):
         os.makedirs(output_dir_block)
 
-    data_loader = data_loader_func(test_data, test_alphas, test_dts, batch_size, shuffle=False)
+    data_loader = data_loader_func(
+        test_data, test_alphas, test_dts, batch_size, shuffle=False
+    )
 
     # Initialize MSE tracker for all time steps
     cumulative_mse = np.zeros(seq_len - n_initial)
@@ -339,9 +416,15 @@ def evaluate_model_block_sequence(model, data_loader_func, test_data, test_alpha
 
         # Track and accumulate MSE for each time step (starting from t=5)
         for t in range(n_initial, seq_len):
-            mse_loss = nn.losses.mse_loss(prediction[:, t, :, :], target[:, t, :, :], reduction="mean")
-            time_step_mse[t - n_initial] = mse_loss.item()  # Store MSE for the current batch
-            cumulative_mse[t - n_initial] += mse_loss.item()  # Accumulate MSE for this time step
+            mse_loss = nn.losses.mse_loss(
+                prediction[:, t, :, :], target[:, t, :, :], reduction="mean"
+            )
+            time_step_mse[t - n_initial] = (
+                mse_loss.item()
+            )  # Store MSE for the current batch
+            cumulative_mse[t - n_initial] += (
+                mse_loss.item()
+            )  # Accumulate MSE for this time step
 
         num_batches += 1
 
@@ -349,5 +432,5 @@ def evaluate_model_block_sequence(model, data_loader_func, test_data, test_alpha
     # Average the MSE by the number of batches
     average_mse = cumulative_mse / num_batches
     print(f"Average MSE over block sequence {average_mse}")
-    
+
     return average_mse

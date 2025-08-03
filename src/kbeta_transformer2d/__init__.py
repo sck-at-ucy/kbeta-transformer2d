@@ -6,5 +6,3 @@ from .model import HeatDiffusionModel
 from .data import generate_datasets
 
 __all__ = ["HeatDiffusionModel", "generate_datasets"]
-
-

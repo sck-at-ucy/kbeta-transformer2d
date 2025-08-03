@@ -11,6 +11,7 @@ import numpy as np
 import mlx.core as mx
 import os
 
+
 def plot_sunspike_histogram(sunspike_list, epoch_idx, bins=50):
     """
     Convenience function to plot a histogram of the sunspike values.
@@ -43,7 +44,6 @@ def save_sunspike_histogram(sunspike_list, epoch_idx, bins=50, outdir="./plots")
     plt.xlabel("Sunspike")
     plt.ylabel("Frequency")
     plt.ylim(0, 40)
-
 
     # Save the figure
     outfile = os.path.join(outdir, f"sunspike_epoch{epoch_idx}.png")
@@ -89,7 +89,9 @@ def save_beta2_histogram(beta2_list, epoch_idx, bins=50, outdir="./plots"):
     plt.close()  # close the figure to free memory
 
 
-def save_distribution_violin_plot_old(values_dict, label="Sunspike", outdir="./violin_plots"):
+def save_distribution_violin_plot_old(
+    values_dict, label="Sunspike", outdir="./violin_plots"
+):
     """
     Creates and saves a violin plot showing the distribution of either 'sunspike'
     or 'beta2' (or anything else) values for each epoch.
@@ -143,6 +145,7 @@ def save_distribution_violin_plot_old(values_dict, label="Sunspike", outdir="./v
 
     print(f"Violin plot saved to {outfile}")
 
+
 def save_distribution_violin_plot(
     values_dict,
     *,
@@ -173,7 +176,7 @@ def save_distribution_violin_plot(
         return
 
     df = pd.DataFrame(rows, columns=["epoch", "value"])
-    df["epoch"] = df["epoch"].astype(str)   # treat as discrete categories
+    df["epoch"] = df["epoch"].astype(str)  # treat as discrete categories
 
     # compute category order once
     order = sorted(df["epoch"].unique(), key=int)
@@ -211,8 +214,11 @@ def save_distribution_violin_plot(
             zorder=3,
         )
         ax.legend(
-            title="", frameon=False, handlelength=1.2,
-            loc="upper right", borderpad=0.2,
+            title="",
+            frameon=False,
+            handlelength=1.2,
+            loc="upper right",
+            borderpad=0.2,
         )
 
     # ── median overlay ─────────────────────────────────────
@@ -241,10 +247,13 @@ def save_distribution_violin_plot(
     print(f"Violin plot saved to {outfile}")
 
 
-
-def save_distribution_density_heatmap(values_dict, label="Sunspike",
-                                      num_bins=50, value_range=(0.0, 1.0),
-                                      outdir="./density_heatmap"):
+def save_distribution_density_heatmap(
+    values_dict,
+    label="Sunspike",
+    num_bins=50,
+    value_range=(0.0, 1.0),
+    outdir="./density_heatmap",
+):
     """
     Creates and saves a 2D heatmap, where the y-axis is epoch and the x-axis is
     bins of the distribution (e.g. sunspike or beta2). The color indicates how
@@ -297,9 +306,9 @@ def save_distribution_density_heatmap(values_dict, label="Sunspike",
     plt.imshow(
         epoch_hist,
         extent=[value_range[0], value_range[1], all_epochs[0], all_epochs[-1]],
-        aspect='auto',
-        origin='lower',
-        cmap='plasma' #'viridis' #'magma'  # or 'viridis', 'plasma', etc.
+        aspect="auto",
+        origin="lower",
+        cmap="plasma",  #'viridis' #'magma'  # or 'viridis', 'plasma', etc.
     )
     plt.colorbar(label="Count")
 
@@ -320,8 +329,14 @@ def save_distribution_density_heatmap(values_dict, label="Sunspike",
 from .train import train_and_validate, evaluate_model
 
 
-def plot_predictions_2D(model, data_loader_func, data_loader_args, num_examples=5, output_dir="./frames2D",
-                        t_trained=1200):
+def plot_predictions_2D(
+    model,
+    data_loader_func,
+    data_loader_args,
+    num_examples=5,
+    output_dir="./frames2D",
+    t_trained=1200,
+):
     """
     Generates and saves model predictions vs. actual data for qualitative evaluation.
 
@@ -362,7 +377,9 @@ def plot_predictions_2D(model, data_loader_func, data_loader_args, num_examples=
 
     print(output_dir)
 
-    for i, (src, target, test_alphas, test_dts) in enumerate(data_loader_func(**data_loader_args)):
+    for i, (src, target, test_alphas, test_dts) in enumerate(
+        data_loader_func(**data_loader_args)
+    ):
         if i >= num_examples:
             break
 
@@ -371,17 +388,23 @@ def plot_predictions_2D(model, data_loader_func, data_loader_args, num_examples=
         for t in range(target.shape[1]):
             fig, axs = plt.subplots(1, 2, figsize=(12, 6))
             actual_temp = src[0, t, :, :]
-            im0 = axs[0].imshow(actual_temp, cmap='coolwarm', interpolation='nearest', vmin=0, vmax=1)
-            axs[0].set_title(f'Actual Temp, Time Step {t}')
+            im0 = axs[0].imshow(
+                actual_temp, cmap="coolwarm", interpolation="nearest", vmin=0, vmax=1
+            )
+            axs[0].set_title(f"Actual Temp, Time Step {t}")
             fig.colorbar(im0, ax=axs[0], fraction=0.046, pad=0.04)
 
             predicted_temp = prediction[0, t, :, :]
-            im1 = axs[1].imshow(predicted_temp, cmap='coolwarm', interpolation='nearest', vmin=0, vmax=1)
-            axs[1].set_title(f'Predicted Temp, Time Step {t}')
+            im1 = axs[1].imshow(
+                predicted_temp, cmap="coolwarm", interpolation="nearest", vmin=0, vmax=1
+            )
+            axs[1].set_title(f"Predicted Temp, Time Step {t}")
             fig.colorbar(im1, ax=axs[1], fraction=0.046, pad=0.04)
 
-            plt.suptitle(f'Example {i + 1}: alpha {test_alphas[0].item():.5f}' + (
-                ', Extrapolated' if t_trained is not None and t > t_trained else ''))
+            plt.suptitle(
+                f"Example {i + 1}: alpha {test_alphas[0].item():.5f}"
+                + (", Extrapolated" if t_trained is not None and t > t_trained else "")
+            )
             plt.tight_layout()
 
             frame_filename = os.path.join(output_dir, f"example_{i + 1}_step_{t}.png")
@@ -389,10 +412,19 @@ def plot_predictions_2D(model, data_loader_func, data_loader_args, num_examples=
             # plt.show()
 
             plt.close(fig)
-        print(f'Created heatmaps for Test Example: {i+1}')
+        print(f"Created heatmaps for Test Example: {i + 1}")
 
-def plot_regressive_predictions_2D(model, data_loader_func, data_loader_args, n_replace, n_initial, num_examples=5,
-                                   output_dir="./frames2D_regress", t_trained=1200):
+
+def plot_regressive_predictions_2D(
+    model,
+    data_loader_func,
+    data_loader_args,
+    n_replace,
+    n_initial,
+    num_examples=5,
+    output_dir="./frames2D_regress",
+    t_trained=1200,
+):
     """
     Evaluate the model in a self-regressive manner and plot predictions.
     """
@@ -405,9 +437,11 @@ def plot_regressive_predictions_2D(model, data_loader_func, data_loader_args, n_
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    #data_loader = data_loader_func(test_data, test_alphas, test_dts, batch_size, shuffle=False)
+    # data_loader = data_loader_func(test_data, test_alphas, test_dts, batch_size, shuffle=False)
 
-    for i, (src, target, test_alphas, test_dts) in enumerate(data_loader_func(**data_loader_args)):
+    for i, (src, target, test_alphas, test_dts) in enumerate(
+        data_loader_func(**data_loader_args)
+    ):
         if i >= num_examples:
             break
         for t in range(n_initial, target.shape[1], n_replace):
@@ -420,24 +454,36 @@ def plot_regressive_predictions_2D(model, data_loader_func, data_loader_args, n_
         for t in range(target.shape[1]):
             fig, axs = plt.subplots(1, 2, figsize=(12, 6))
             actual_temp = target[0, t, :, :]
-            im0 = axs[0].imshow(actual_temp, cmap='coolwarm', interpolation='nearest', vmin=0, vmax=1)
-            axs[0].set_title(f'Actual Temp, Time Step {t + 1}')
+            im0 = axs[0].imshow(
+                actual_temp, cmap="coolwarm", interpolation="nearest", vmin=0, vmax=1
+            )
+            axs[0].set_title(f"Actual Temp, Time Step {t + 1}")
             fig.colorbar(im0, ax=axs[0], fraction=0.046, pad=0.04)
 
             predicted_temp = prediction[0, t, :, :]
-            im1 = axs[1].imshow(predicted_temp, cmap='coolwarm', interpolation='nearest', vmin=0, vmax=1)
-            axs[1].set_title(f'Predicted Temp, Time Step {t + 1}')
+            im1 = axs[1].imshow(
+                predicted_temp, cmap="coolwarm", interpolation="nearest", vmin=0, vmax=1
+            )
+            axs[1].set_title(f"Predicted Temp, Time Step {t + 1}")
             fig.colorbar(im1, ax=axs[1], fraction=0.046, pad=0.04)
 
-            plt.suptitle(f'Example {num_plots + 1}: alpha {test_alphas[0].item():.5f}'
-                         + (', !Forward Extrapolation!' if t_trained is not None and t > t_trained - 1 else ''))
+            plt.suptitle(
+                f"Example {num_plots + 1}: alpha {test_alphas[0].item():.5f}"
+                + (
+                    ", !Forward Extrapolation!"
+                    if t_trained is not None and t > t_trained - 1
+                    else ""
+                )
+            )
             plt.tight_layout()
 
-            frame_filename = os.path.join(output_dir, f"example_{num_plots + 1}_step_{t + 1}.png")
+            frame_filename = os.path.join(
+                output_dir, f"example_{num_plots + 1}_step_{t + 1}.png"
+            )
             plt.savefig(frame_filename)
             plt.close(fig)
         num_plots += 1
-        print(f'Created heatmaps for Test Example: {num_plots}')
+        print(f"Created heatmaps for Test Example: {num_plots}")
 
 
 def plot_positional_encodings(model, seq_len):
@@ -469,9 +515,15 @@ def plot_positional_encodings(model, seq_len):
     pos_indices_t = mx.arange(seq_len).reshape(1, -1)  # Shape: (1, seq_len)
 
     # Get positional encodings from the model
-    pos_enc_y = np.array(model.positional_encoding_y(pos_indices_y))  # Should be (1, ny, embed_dim)
-    pos_enc_x = np.array(model.positional_encoding_x(pos_indices_x))  # Should be (nx, 1, embed_dim)
-    pos_enc_t = np.array(model.positional_encoding_t(pos_indices_t))  # Should be (1, seq_len, embed_dim)
+    pos_enc_y = np.array(
+        model.positional_encoding_y(pos_indices_y)
+    )  # Should be (1, ny, embed_dim)
+    pos_enc_x = np.array(
+        model.positional_encoding_x(pos_indices_x)
+    )  # Should be (nx, 1, embed_dim)
+    pos_enc_t = np.array(
+        model.positional_encoding_t(pos_indices_t)
+    )  # Should be (1, seq_len, embed_dim)
 
     # Sum across embedding dimension to reduce to 2D
     pos_enc_y_sum = pos_enc_y.sum(axis=2)  # Sum over embedding dimension
@@ -482,23 +534,23 @@ def plot_positional_encodings(model, seq_len):
 
     plt.figure(figsize=(21, 7))
     plt.subplot(1, 3, 1)
-    plt.title('Positional Encoding Y')
-    plt.imshow(pos_enc_y_sum, aspect='auto', cmap='viridis')
+    plt.title("Positional Encoding Y")
+    plt.imshow(pos_enc_y_sum, aspect="auto", cmap="viridis")
     plt.colorbar()
 
     plt.subplot(1, 3, 2)
-    plt.title('Positional Encoding X')
-    plt.imshow(pos_enc_x_sum.T, aspect='auto', cmap='viridis')  # Transposed to align dimensions
+    plt.title("Positional Encoding X")
+    plt.imshow(
+        pos_enc_x_sum.T, aspect="auto", cmap="viridis"
+    )  # Transposed to align dimensions
     plt.colorbar()
 
     plt.subplot(1, 3, 3)
-    plt.title('Temporal Positional Encoding')
-    plt.imshow(pos_enc_t_sum, aspect='auto', cmap='viridis')
+    plt.title("Temporal Positional Encoding")
+    plt.imshow(pos_enc_t_sum, aspect="auto", cmap="viridis")
     plt.colorbar()
 
     plt.show()
-
-
 
 
 def plot_model_weights(model, epoch):
@@ -537,8 +589,8 @@ def plot_model_weights(model, epoch):
     # Function to filter the model's weights based on a condition
     def filter_fn(module, key, value):
         # Check if the key contains 'weight' and is a valid MLX array
-        if isinstance(value, dict) and 'weight' in value:
-            weight = value['weight']
+        if isinstance(value, dict) and "weight" in value:
+            weight = value["weight"]
             if is_mlx_array(weight):
                 mean_abs = weight.abs().mean()
                 return mean_abs > 0.003  # Filter out small weights
@@ -557,9 +609,9 @@ def plot_model_weights(model, epoch):
     filtered_weights = model.filter_and_map(filter_fn, map_fn)
 
     # Retrieve weights from the 'output_projection' layer
-    weights_dict = filtered_weights.get('output_projection', None)
+    weights_dict = filtered_weights.get("output_projection", None)
     if weights_dict is not None:
-        weights = weights_dict.get('weight', None)
+        weights = weights_dict.get("weight", None)
         if weights is not None:
             # Reshape weights if needed
             if weights.ndim == 1:
@@ -576,8 +628,12 @@ def plot_model_weights(model, epoch):
 
             # Threshold for significant weights
             threshold = 0.75 * max_data
-            count_above_threshold = mx.sum(weights_abs_reshaped > threshold[:, :, None], axis=2)
-            count_above_mean = mx.sum(weights_abs_reshaped > mean_data[:, :, None], axis=2)
+            count_above_threshold = mx.sum(
+                weights_abs_reshaped > threshold[:, :, None], axis=2
+            )
+            count_above_mean = mx.sum(
+                weights_abs_reshaped > mean_data[:, :, None], axis=2
+            )
 
             # Plot the results as heatmaps
             fig, axes = plt.subplots(2, 2, figsize=(20, 20))
@@ -585,35 +641,57 @@ def plot_model_weights(model, epoch):
             yticks = np.arange(0, 26, 2)
 
             # Heatmap for the mean of absolute weights
-            sns.heatmap(np.array(mean_data), ax=axes[0, 0], cmap='viridis', square=True,
-                        cbar_ax=fig.add_axes([0.48, 0.53, 0.02, 0.35]))
-            axes[0, 0].set_title('Mean of Abs Weights')
+            sns.heatmap(
+                np.array(mean_data),
+                ax=axes[0, 0],
+                cmap="viridis",
+                square=True,
+                cbar_ax=fig.add_axes([0.48, 0.53, 0.02, 0.35]),
+            )
+            axes[0, 0].set_title("Mean of Abs Weights")
             axes[0, 0].set_xticks(xticks)
             axes[0, 0].set_yticks(yticks)
 
             # Heatmap for the max of absolute weights
-            sns.heatmap(np.array(max_data), ax=axes[0, 1], cmap='viridis', square=True,
-                        cbar_ax=fig.add_axes([0.903, 0.53, 0.02, 0.35]))
-            axes[0, 1].set_title('Max of Abs Weights')
+            sns.heatmap(
+                np.array(max_data),
+                ax=axes[0, 1],
+                cmap="viridis",
+                square=True,
+                cbar_ax=fig.add_axes([0.903, 0.53, 0.02, 0.35]),
+            )
+            axes[0, 1].set_title("Max of Abs Weights")
             axes[0, 1].set_xticks(xticks)
             axes[0, 1].set_yticks(yticks)
 
             # Heatmap for count above the mean
-            sns.heatmap(np.array(count_above_mean), ax=axes[1, 0], cmap='viridis', square=True,
-                        cbar_ax=fig.add_axes([0.48, 0.11, 0.015, 0.35]))
-            axes[1, 0].set_title('Count Above Mean Value')
+            sns.heatmap(
+                np.array(count_above_mean),
+                ax=axes[1, 0],
+                cmap="viridis",
+                square=True,
+                cbar_ax=fig.add_axes([0.48, 0.11, 0.015, 0.35]),
+            )
+            axes[1, 0].set_title("Count Above Mean Value")
             axes[1, 0].set_xticks(xticks)
             axes[1, 0].set_yticks(yticks)
 
             # Heatmap for count above 0.75 * max value
-            sns.heatmap(np.array(count_above_threshold), ax=axes[1, 1], cmap='viridis', square=True,
-                        cbar_ax=fig.add_axes([0.903, 0.11, 0.015, 0.35]))
-            axes[1, 1].set_title('Count Above 0.75 * Max Value')
+            sns.heatmap(
+                np.array(count_above_threshold),
+                ax=axes[1, 1],
+                cmap="viridis",
+                square=True,
+                cbar_ax=fig.add_axes([0.903, 0.11, 0.015, 0.35]),
+            )
+            axes[1, 1].set_title("Count Above 0.75 * Max Value")
             axes[1, 1].set_xticks(xticks)
             axes[1, 1].set_yticks(yticks)
 
             # Save the plots to file
-            frame_dir = os.path.join(os.path.dirname(__file__), 'Base_Block_MPI_noGradAve_weights')
+            frame_dir = os.path.join(
+                os.path.dirname(__file__), "Base_Block_MPI_noGradAve_weights"
+            )
             os.makedirs(frame_dir, exist_ok=True)
 
             # Correct the frame filename
@@ -621,16 +699,16 @@ def plot_model_weights(model, epoch):
             plt.savefig(frame_filename)
             plt.close(fig)
         else:
-            print('No weights found for output_projection')
+            print("No weights found for output_projection")
     else:
-        print('No output_projection key found in filtered weights')
+        print("No output_projection key found in filtered weights")
 
 
 def plot_mse_evolution(mse: np.ndarray, output_dir: str, label="block"):
     os.makedirs(output_dir, exist_ok=True)
     steps = np.arange(5, 5 + len(mse))
     plt.figure(figsize=(10, 6))
-    plt.plot(steps, mse, marker='o')
+    plt.plot(steps, mse, marker="o")
     plt.xlabel("Time step")
     plt.ylabel("MSE")
     plt.title("Average MSE evolution")

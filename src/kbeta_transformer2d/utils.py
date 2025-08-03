@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 # ── third‑party -----------------------------------------------------------
-import numpy as np            # needed by compare_* helpers
-import mlx.core as mx         # needed by compute_average_var
+import numpy as np  # needed by compare_* helpers
+import mlx.core as mx  # needed by compute_average_var
 
 # ── std‑lib (optional, but handy for type hints) --------------------------
 from typing import Any, Dict, List, Tuple
@@ -54,8 +54,8 @@ def compute_average_var(optimizer):
                                     # We'll search for actual param dicts
                                     for param_name, param_data in layer_val.items():
                                         if (
-                                                isinstance(param_data, dict)
-                                                and "posterior_var" in param_data
+                                            isinstance(param_data, dict)
+                                            and "posterior_var" in param_data
                                         ):
                                             arr = param_data["posterior_var"]
                                             all_vars.append(mx.mean(arr))
@@ -80,7 +80,8 @@ def compute_average_var(optimizer):
 
     # Stack them and average
     return float(mx.mean(mx.stack(all_vars)))
-    
+
+
 def compare_datasets(saved, loaded, dataset_name):
     """
     Compares two datasets and logs mismatches.
@@ -150,7 +151,9 @@ def print_config_comparison(current_config, loaded_config):
     "Current Config" and "Loaded Config" on two separate, indented lines.
     """
     print(" ===== Comparison of Current Config and Loaded Config ====")
-    print(" ----  Current config is NOT overwritten. Loaded Config is only used to check consistency ----")
+    print(
+        " ----  Current config is NOT overwritten. Loaded Config is only used to check consistency ----"
+    )
     print(f"{'Config Key':<25}")
     print("=" * 50)
 
@@ -158,14 +161,19 @@ def print_config_comparison(current_config, loaded_config):
     all_keys = set(current_config.keys()).union(set(loaded_config.keys()))
 
     for key in sorted(all_keys):
-        current_value = current_config.get(key, "N/A")  # Get value from current config or "N/A" if not present
-        loaded_value = loaded_config.get(key, "N/A")  # Get value from loaded config or "N/A" if not present
+        current_value = current_config.get(
+            key, "N/A"
+        )  # Get value from current config or "N/A" if not present
+        loaded_value = loaded_config.get(
+            key, "N/A"
+        )  # Get value from loaded config or "N/A" if not present
 
         # Print the key and values on separate lines
         print(f"{key:<25}")
         print(f"  Current Config: {str(current_value)}")
         print(f"  Loaded Config:  {str(loaded_value)}")
         print("-" * 50)
+
 
 # Convert lists to tuples for comparison purposes
 def convert_lists_to_tuples(config):
@@ -227,6 +235,7 @@ def compare_list_states(original, loaded, state_name):
                 match = False
     return match
 
+
 def compare_dict_states(original, loaded, state_name):
     """
     Compares two dictionary states and logs differences.
@@ -256,14 +265,20 @@ def compare_dict_states(original, loaded, state_name):
         if key not in loaded:
             if original[key] is None or original[key] == [] or original[key] == {}:
                 continue  # Do not treat as an error if the original value is None or empty
-            print(f"Error comparing {state_name} at key: {key} - Key not found in loaded state.")
+            print(
+                f"Error comparing {state_name} at key: {key} - Key not found in loaded state."
+            )
             match = False
             continue
         if isinstance(original[key], dict) and isinstance(loaded[key], dict):
-            if not compare_dict_states(original[key], loaded[key], f"{state_name}.{key}"):
+            if not compare_dict_states(
+                original[key], loaded[key], f"{state_name}.{key}"
+            ):
                 match = False
         elif isinstance(original[key], list) and isinstance(loaded[key], list):
-            if not compare_list_states(original[key], loaded[key], f"{state_name}.{key}"):
+            if not compare_list_states(
+                original[key], loaded[key], f"{state_name}.{key}"
+            ):
                 match = False
         else:
             if original[key] is None and loaded[key] is None:
@@ -273,6 +288,8 @@ def compare_dict_states(original, loaded, state_name):
                 match = False
     for key in loaded:
         if key not in original:
-            print(f"Error comparing {state_name} at key: {key} - Key not found in original state.")
+            print(
+                f"Error comparing {state_name} at key: {key} - Key not found in original state."
+            )
             match = False
     return match

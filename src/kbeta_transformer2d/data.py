@@ -1,5 +1,5 @@
-#transformer/data.py
-"""file start: data.py 
+# transformer/data.py
+"""file start: data.py
 Dataset creation and loaders (moved from Testing_Kourkoutasb.py)"""
 
 from __future__ import annotations
@@ -18,7 +18,6 @@ __all__ = [
     "save_datasets",
     "load_datasets",
 ]
-
 
 
 def initialize_geometry_and_bcs(config):
@@ -83,26 +82,52 @@ def initialize_geometry_and_bcs(config):
     ny = int(geom["rod_width"] / geom["dy"]) + 1
 
     # Generate boundary conditions
-    training_bcs, validation_bcs, test_bcs, training_alphas, validation_alphas, test_alphas = \
-        generate_bcs_and_split_2D(
-            config["training_samples"],
-            bcs["left_limits"], bcs["right_limits"],
-            bcs["top_limits"], bcs["bottom_limits"],
-            alphas["alpha_limits"]
-        )
+    (
+        training_bcs,
+        validation_bcs,
+        test_bcs,
+        training_alphas,
+        validation_alphas,
+        test_alphas,
+    ) = generate_bcs_and_split_2D(
+        config["training_samples"],
+        bcs["left_limits"],
+        bcs["right_limits"],
+        bcs["top_limits"],
+        bcs["bottom_limits"],
+        alphas["alpha_limits"],
+    )
 
-    return nx, ny, training_bcs, validation_bcs, test_bcs, training_alphas, validation_alphas, test_alphas
+    return (
+        nx,
+        ny,
+        training_bcs,
+        validation_bcs,
+        test_bcs,
+        training_alphas,
+        validation_alphas,
+        test_alphas,
+    )
+
 
 # Refactored MLX version
 @mx.compile
-def generate_bcs_and_split_2D(num_samples, left_limits, right_limits, top_limits, bottom_limits, alpha_limits, synchronized_shuffling=False):
+def generate_bcs_and_split_2D(
+    num_samples,
+    left_limits,
+    right_limits,
+    top_limits,
+    bottom_limits,
+    alpha_limits,
+    synchronized_shuffling=False,
+):
     left_bcs = mx.linspace(left_limits[0], left_limits[1], num_samples)
     right_bcs = mx.linspace(right_limits[0], right_limits[1], num_samples)
     top_bcs = mx.linspace(top_limits[0], top_limits[1], num_samples)
     bottom_bcs = mx.linspace(bottom_limits[0], bottom_limits[1], num_samples)
     alphas = mx.linspace(alpha_limits[0], alpha_limits[1], num_samples)
 
-    '''
+    """
     if synchronized_shuffling:
         # Generate random floating-point numbers uniformly distributed between 0 and 1
         random_floats = mx.random.uniform(low=0, high=1, shape=(left_bcs.shape[0],))
@@ -127,7 +152,7 @@ def generate_bcs_and_split_2D(num_samples, left_limits, right_limits, top_limits
         top_bcs = top_bcs[indicesT]
         bottom_bcs = bottom_bcs[indicesB]
         alphas = alphas[indicesA]
-    '''
+    """
 
     arrs = [left_bcs, right_bcs, top_bcs, bottom_bcs, alphas]
     if synchronized_shuffling:
@@ -140,46 +165,62 @@ def generate_bcs_and_split_2D(num_samples, left_limits, right_limits, top_limits
     left_bcs, right_bcs, top_bcs, bottom_bcs, alphas = arrs
 
     # Splitting data
-    training_left = left_bcs[:int(0.7 * num_samples)]
-    validation_left = left_bcs[int(0.7 * num_samples):int(0.9 * num_samples)]
-    test_left = left_bcs[int(0.9 * num_samples):]
+    training_left = left_bcs[: int(0.7 * num_samples)]
+    validation_left = left_bcs[int(0.7 * num_samples) : int(0.9 * num_samples)]
+    test_left = left_bcs[int(0.9 * num_samples) :]
 
-    training_right = right_bcs[:int(0.7 * num_samples)]
-    validation_right = right_bcs[int(0.7 * num_samples):int(0.9 * num_samples)]
-    test_right = right_bcs[int(0.9 * num_samples):]
+    training_right = right_bcs[: int(0.7 * num_samples)]
+    validation_right = right_bcs[int(0.7 * num_samples) : int(0.9 * num_samples)]
+    test_right = right_bcs[int(0.9 * num_samples) :]
 
-    training_top = top_bcs[:int(0.7 * num_samples)]
-    validation_top = top_bcs[int(0.7 * num_samples):int(0.9 * num_samples)]
-    test_top = top_bcs[int(0.9 * num_samples):]
+    training_top = top_bcs[: int(0.7 * num_samples)]
+    validation_top = top_bcs[int(0.7 * num_samples) : int(0.9 * num_samples)]
+    test_top = top_bcs[int(0.9 * num_samples) :]
 
-    training_bottom = bottom_bcs[:int(0.7 * num_samples)]
-    validation_bottom = bottom_bcs[int(0.7 * num_samples):int(0.9 * num_samples)]
-    test_bottom = bottom_bcs[int(0.9 * num_samples):]
+    training_bottom = bottom_bcs[: int(0.7 * num_samples)]
+    validation_bottom = bottom_bcs[int(0.7 * num_samples) : int(0.9 * num_samples)]
+    test_bottom = bottom_bcs[int(0.9 * num_samples) :]
 
-    training_alphas = alphas[:int(0.7 * num_samples)]
-    validation_alphas = alphas[int(0.7 * num_samples):int(0.9 * num_samples)]
-    test_alphas = alphas[int(0.9 * num_samples):]
+    training_alphas = alphas[: int(0.7 * num_samples)]
+    validation_alphas = alphas[int(0.7 * num_samples) : int(0.9 * num_samples)]
+    test_alphas = alphas[int(0.9 * num_samples) :]
 
-    return (training_left, training_right, training_top, training_bottom), \
-        (validation_left, validation_right, validation_top, validation_bottom), \
-        (test_left, test_right, test_top, test_bottom), \
-        training_alphas, validation_alphas, test_alphas
+    return (
+        (training_left, training_right, training_top, training_bottom),
+        (validation_left, validation_right, validation_top, validation_bottom),
+        (test_left, test_right, test_top, test_bottom),
+        training_alphas,
+        validation_alphas,
+        test_alphas,
+    )
 
 
-def generate_heat_data_2D(rod_length, rod_width, dx, dy, time_steps,
-                          left_bcs, right_bcs, top_bcs, bottom_bcs, alphas,
-                          boundary_segment_strategy="base_case"):
+def generate_heat_data_2D(
+    rod_length,
+    rod_width,
+    dx,
+    dy,
+    time_steps,
+    left_bcs,
+    right_bcs,
+    top_bcs,
+    bottom_bcs,
+    alphas,
+    boundary_segment_strategy="base_case",
+):
     num_samples = left_bcs.shape[0]
     nx = int(rod_length / dx) + 1
     ny = int(rod_width / dy) + 1
 
     # Initialize solutions using MLX arrays
     solutions = mx.zeros((num_samples, time_steps, ny, nx))
-    dts = dx ** 2 / (10 * alphas)  # Vectorized computation of time steps for each sample
+    dts = dx**2 / (10 * alphas)  # Vectorized computation of time steps for each sample
 
     # Initialize temperature array with random values for each sample
     random_values = mx.random.uniform(low=0, high=1, shape=(num_samples,))
-    random_values_reshaped = random_values[:, None, None]  # Shape becomes (num_samples, 1, 1)
+    random_values_reshaped = random_values[
+        :, None, None
+    ]  # Shape becomes (num_samples, 1, 1)
     T = mx.full((num_samples, ny, nx), 1.0) * random_values_reshaped
 
     # Apply boundary conditions
@@ -200,8 +241,12 @@ def generate_heat_data_2D(rod_length, rod_width, dx, dy, time_steps,
         side1 = side_indices[:, 0]
         side2 = side_indices[:, 1]
         # Prepare arrays for vectorized indexing
-        start_positions_x = mx.random.randint(low=0, high=(nx - 4), shape=(num_samples,))
-        start_positions_y = mx.random.randint(low=0, high=(ny - 4), shape=(num_samples,))
+        start_positions_x = mx.random.randint(
+            low=0, high=(nx - 4), shape=(num_samples,)
+        )
+        start_positions_y = mx.random.randint(
+            low=0, high=(ny - 4), shape=(num_samples,)
+        )
         place_segments_vectorized(T, side1, start_positions_x, 1, ny, nx)
         place_segments_vectorized(T, side2, start_positions_y, 0, ny, nx)
 
@@ -214,7 +259,9 @@ def generate_heat_data_2D(rod_length, rod_width, dx, dy, time_steps,
 
         # Update only the inner region (1:-1) of the temperature array
         T_new = mx.array(T)
-        T_new[:, 1:-1, 1:-1] = T[:, 1:-1, 1:-1] + alphas[:, None, None] * dts[:, None, None] * (d2T_dx2 + d2T_dy2)
+        T_new[:, 1:-1, 1:-1] = T[:, 1:-1, 1:-1] + alphas[:, None, None] * dts[
+            :, None, None
+        ] * (d2T_dx2 + d2T_dy2)
 
         # Reapply boundary conditions
         T_new[:, :, -1] = right_bcs[:, None]  # Right boundary
@@ -258,27 +305,39 @@ def place_segments_vectorized(T, side, start_positions, value, ny, nx):
 
     # Top side
     if mask_top_indices.shape[0] > 0:
-        cols_top = start_positions[mask_top_indices][:, None] + arange_segment  # (5968, 4)
+        cols_top = (
+            start_positions[mask_top_indices][:, None] + arange_segment
+        )  # (5968, 4)
         for i in range(cols_top.shape[1]):  # Loop over segment length
             T[mask_top_indices, 0, cols_top[:, i]] = value  # Update each segment column
 
     # Bottom side
     if mask_bottom_indices.shape[0] > 0:
-        cols_bottom = start_positions[mask_bottom_indices][:, None] + arange_segment  # (5968, 4)
+        cols_bottom = (
+            start_positions[mask_bottom_indices][:, None] + arange_segment
+        )  # (5968, 4)
         for i in range(cols_bottom.shape[1]):  # Loop over segment length
-            T[mask_bottom_indices, ny - 1, cols_bottom[:, i]] = value  # Update each segment column
+            T[mask_bottom_indices, ny - 1, cols_bottom[:, i]] = (
+                value  # Update each segment column
+            )
 
     # Left side
     if mask_left_indices.shape[0] > 0:
-        rows_left = start_positions[mask_left_indices][:, None] + arange_segment  # (5968, 4)
+        rows_left = (
+            start_positions[mask_left_indices][:, None] + arange_segment
+        )  # (5968, 4)
         for i in range(rows_left.shape[1]):  # Loop over segment length
             T[mask_left_indices, rows_left[:, i], 0] = value  # Update each segment row
 
     # Right side
     if mask_right_indices.shape[0] > 0:
-        rows_right = start_positions[mask_right_indices][:, None] + arange_segment  # (5968, 4)
+        rows_right = (
+            start_positions[mask_right_indices][:, None] + arange_segment
+        )  # (5968, 4)
         for i in range(rows_right.shape[1]):  # Loop over segment length
-            T[mask_right_indices, rows_right[:, i], nx - 1] = value  # Update each segment row
+            T[mask_right_indices, rows_right[:, i], nx - 1] = (
+                value  # Update each segment row
+            )
 
     return T
 
@@ -288,36 +347,44 @@ def apply_fixed_segments(T, side1, side2, pos1, pos2):
     Apply fixed boundary segments using MLX array operations for Challenge 1.
     """
     if side1 == 0:
-        T[:, pos1:pos1 + 4, 0] = 1.0  # Apply left boundary
+        T[:, pos1 : pos1 + 4, 0] = 1.0  # Apply left boundary
     if side2 == 1:
-        T[:, pos2:pos2 + 4, -1] = 0.0  # Apply right boundary
+        T[:, pos2 : pos2 + 4, -1] = 0.0  # Apply right boundary
     return T
-
 
 
 # Dataset generation for MLX
 def generate_datasets(
-        config,
-        training_bcs, validation_bcs, test_bcs,
-        training_alphas, validation_alphas, test_alphas):
-    geom          = config["geometry"]
-    model_params  = config["model_params"]
-    strategy      = config["boundary_segment_strategy"]   # <‑ one name everywhere
+    config,
+    training_bcs,
+    validation_bcs,
+    test_bcs,
+    training_alphas,
+    validation_alphas,
+    test_alphas,
+):
+    geom = config["geometry"]
+    model_params = config["model_params"]
+    strategy = config["boundary_segment_strategy"]  # <‑ one name everywhere
 
     # ---- training set ---------------------------------------------------
     train_data, train_alphas_out, train_dts = generate_heat_data_2D(
-        geom["rod_length"], geom["rod_width"],
-        geom["dx"], geom["dy"],
+        geom["rod_length"],
+        geom["rod_width"],
+        geom["dx"],
+        geom["dy"],
         model_params["time_steps"],
-        *training_bcs,                 # expands to left / right / top / bottom
-        training_alphas,               # diffusivities for this split
+        *training_bcs,  # expands to left / right / top / bottom
+        training_alphas,  # diffusivities for this split
         strategy,
     )
 
     # ---- validation set --------------------------------------------------
     val_data, val_alphas_out, val_dts = generate_heat_data_2D(
-        geom["rod_length"], geom["rod_width"],
-        geom["dx"], geom["dy"],
+        geom["rod_length"],
+        geom["rod_width"],
+        geom["dx"],
+        geom["dy"],
         model_params["time_steps"],
         *validation_bcs,
         validation_alphas,
@@ -326,18 +393,27 @@ def generate_datasets(
 
     # ---- test set --------------------------------------------------------
     test_data, test_alphas_out, test_dts = generate_heat_data_2D(
-        geom["rod_length"], geom["rod_width"],
-        geom["dx"], geom["dy"],
+        geom["rod_length"],
+        geom["rod_width"],
+        geom["dx"],
+        geom["dy"],
         model_params["time_steps"],
         *test_bcs,
         test_alphas,
         strategy,
     )
 
-    return (train_data,   train_alphas_out,   train_dts,
-            val_data,     val_alphas_out,     val_dts,
-            test_data,    test_alphas_out,    test_dts)
-
+    return (
+        train_data,
+        train_alphas_out,
+        train_dts,
+        val_data,
+        val_alphas_out,
+        val_dts,
+        test_data,
+        test_alphas_out,
+        test_dts,
+    )
 
 
 def data_loader_2D(data, alphas, solution_dts, batch_size, shuffle=True):
@@ -408,15 +484,23 @@ def calculate_spatial_derivative_2D_initial(T, dx, dy):
     Vectorized calculation of second-order spatial derivatives using MLX's array operations.
     This avoids explicit loops.
     """
-    d2T_dx2 = (T[:, 1:-1, 2:] - 2 * T[:, 1:-1, 1:-1] + T[:, 1:-1, :-2]) / dx ** 2
-    d2T_dy2 = (T[:, 2:, 1:-1] - 2 * T[:, 1:-1, 1:-1] + T[:, :-2, 1:-1]) / dy ** 2
+    d2T_dx2 = (T[:, 1:-1, 2:] - 2 * T[:, 1:-1, 1:-1] + T[:, 1:-1, :-2]) / dx**2
+    d2T_dy2 = (T[:, 2:, 1:-1] - 2 * T[:, 1:-1, 1:-1] + T[:, :-2, 1:-1]) / dy**2
     return d2T_dx2, d2T_dy2
-    
 
 
-
-def save_datasets(train_data, train_alphas, train_dts, val_data, val_alphas, val_dts, test_data, test_alphas, test_dts,
-                  dir_path):
+def save_datasets(
+    train_data,
+    train_alphas,
+    train_dts,
+    val_data,
+    val_alphas,
+    val_dts,
+    test_data,
+    test_alphas,
+    test_dts,
+    dir_path,
+):
     """
     Saves the training, validation, and test datasets to the specified directory.
 
@@ -453,15 +537,15 @@ def save_datasets(train_data, train_alphas, train_dts, val_data, val_alphas, val
         The datasets are saved to the specified directory.
     """
     os.makedirs(dir_path, exist_ok=True)
-    mx.save(os.path.join(dir_path, 'train_data'), train_data)
-    mx.save(os.path.join(dir_path, 'train_alphas'), train_alphas)
-    mx.save(os.path.join(dir_path, 'train_dts'), train_dts)
-    mx.save(os.path.join(dir_path, 'val_data'), val_data)
-    mx.save(os.path.join(dir_path, 'val_alphas'), val_alphas)
-    mx.save(os.path.join(dir_path, 'val_dts'), val_dts)
-    mx.save(os.path.join(dir_path, 'test_data'), test_data)
-    mx.save(os.path.join(dir_path, 'test_alphas'), test_alphas)
-    mx.save(os.path.join(dir_path, 'test_dts'), test_dts)
+    mx.save(os.path.join(dir_path, "train_data"), train_data)
+    mx.save(os.path.join(dir_path, "train_alphas"), train_alphas)
+    mx.save(os.path.join(dir_path, "train_dts"), train_dts)
+    mx.save(os.path.join(dir_path, "val_data"), val_data)
+    mx.save(os.path.join(dir_path, "val_alphas"), val_alphas)
+    mx.save(os.path.join(dir_path, "val_dts"), val_dts)
+    mx.save(os.path.join(dir_path, "test_data"), test_data)
+    mx.save(os.path.join(dir_path, "test_alphas"), test_alphas)
+    mx.save(os.path.join(dir_path, "test_dts"), test_dts)
 
 
 def load_datasets(dir_path):
@@ -498,13 +582,23 @@ def load_datasets(dir_path):
         - test_dts : mlx.core.array
             Time steps for the test dataset.
     """
-    train_data = mx.load(os.path.join(dir_path, 'train_data.npy'))
-    train_alphas = mx.load(os.path.join(dir_path, 'train_alphas.npy'))
-    train_dts = mx.load(os.path.join(dir_path, 'train_dts.npy'))
-    val_data = mx.load(os.path.join(dir_path, 'val_data.npy'))
-    val_alphas = mx.load(os.path.join(dir_path, 'val_alphas.npy'))
-    val_dts = mx.load(os.path.join(dir_path, 'val_dts.npy'))
-    test_data = mx.load(os.path.join(dir_path, 'test_data.npy'))
-    test_alphas = mx.load(os.path.join(dir_path, 'test_alphas.npy'))
-    test_dts = mx.load(os.path.join(dir_path, 'test_dts.npy'))
-    return train_data, train_alphas, train_dts, val_data, val_alphas, val_dts, test_data, test_alphas, test_dts
+    train_data = mx.load(os.path.join(dir_path, "train_data.npy"))
+    train_alphas = mx.load(os.path.join(dir_path, "train_alphas.npy"))
+    train_dts = mx.load(os.path.join(dir_path, "train_dts.npy"))
+    val_data = mx.load(os.path.join(dir_path, "val_data.npy"))
+    val_alphas = mx.load(os.path.join(dir_path, "val_alphas.npy"))
+    val_dts = mx.load(os.path.join(dir_path, "val_dts.npy"))
+    test_data = mx.load(os.path.join(dir_path, "test_data.npy"))
+    test_alphas = mx.load(os.path.join(dir_path, "test_alphas.npy"))
+    test_dts = mx.load(os.path.join(dir_path, "test_dts.npy"))
+    return (
+        train_data,
+        train_alphas,
+        train_dts,
+        val_data,
+        val_alphas,
+        val_dts,
+        test_data,
+        test_alphas,
+        test_dts,
+    )

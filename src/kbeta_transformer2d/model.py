@@ -14,9 +14,20 @@ __all__ = [
     "compute_initial_loss_2D",
 ]
 
+
 class HeatDiffusionModel(nn.Module):
-    def __init__(self, ny, nx, seq_len, num_heads, num_encoder_layers,
-                 mlp_dim, embed_dim, start_predicting_from, mask_type):
+    def __init__(
+        self,
+        ny,
+        nx,
+        seq_len,
+        num_heads,
+        num_encoder_layers,
+        mlp_dim,
+        embed_dim,
+        start_predicting_from,
+        mask_type,
+    ):
         super().__init__()
         self.seq_len = seq_len
         self.output_seq_len = seq_len
@@ -29,7 +40,9 @@ class HeatDiffusionModel(nn.Module):
         self._mask_type = mask_type
 
         # QAT-compatible spatial encoding layers
-        self.projection_spatial_enc = nn.QuantizedLinear(ny * nx * self.spatial_features, self.embed_dim)
+        self.projection_spatial_enc = nn.QuantizedLinear(
+            ny * nx * self.spatial_features, self.embed_dim
+        )
 
         self.positional_encoding_y = nn.QuantizedEmbedding(ny, self.spatial_features)
         self.positional_encoding_x = nn.QuantizedEmbedding(nx, self.spatial_features)
@@ -37,28 +50,32 @@ class HeatDiffusionModel(nn.Module):
 
         # Transformer encoder with quantized layers
         self.transformer_encoder = nn.TransformerEncoder(
-            num_layers=num_encoder_layers, dims=embed_dim, num_heads=num_heads,
-            mlp_dims=mlp_dim, checkpoint=False)
+            num_layers=num_encoder_layers,
+            dims=embed_dim,
+            num_heads=num_heads,
+            mlp_dims=mlp_dim,
+            checkpoint=False,
+        )
 
         self.output_projection = nn.Linear(embed_dim, ny * nx)
         self.diffusivity_embedding = nn.Linear(1, embed_dim)
         self.layer_normalizer = nn.LayerNorm(dims=embed_dim)
 
-        if self._mask_type == 'causal':
+        if self._mask_type == "causal":
             self.mask = self.create_src_causal_mask(self.seq_len)
-        elif self._mask_type == 'block':
+        elif self._mask_type == "block":
             self.mask = self.create_src_block_mask(self.seq_len)
         else:
             raise ValueError("Unsupported mask type")
 
     def create_src_block_mask(self, seq_len):
         mask = mx.full((seq_len, seq_len), -mx.inf, dtype=mx.float32)
-        mask[:, :self._start_predicting_from] = 0
+        mask[:, : self._start_predicting_from] = 0
         return mask
 
     def create_src_causal_mask(self, seq_len):
         mask = mx.triu(-mx.inf * mx.ones((seq_len, seq_len)), k=0)
-        mask[:, :self._start_predicting_from] = 0
+        mask[:, : self._start_predicting_from] = 0
         return mask
 
     def spatial_positional_encoding(self):
@@ -67,8 +84,12 @@ class HeatDiffusionModel(nn.Module):
         nx_encoding = self.positional_encoding_x(mx.arange(self.nx))
 
         # Apply expand_dims correctly with mx.expand_dims
-        ny_encoding = mx.expand_dims(mx.expand_dims(ny_encoding, axis=0), axis=2)  # Shape: [1, ny, 1, spatial_features]
-        nx_encoding = mx.expand_dims(mx.expand_dims(nx_encoding, axis=0), axis=1)  # Shape: [1, 1, nx, spatial_features]
+        ny_encoding = mx.expand_dims(
+            mx.expand_dims(ny_encoding, axis=0), axis=2
+        )  # Shape: [1, ny, 1, spatial_features]
+        nx_encoding = mx.expand_dims(
+            mx.expand_dims(nx_encoding, axis=0), axis=1
+        )  # Shape: [1, 1, nx, spatial_features]
 
         # Apply RoPE with the required parameters on expanded dimensions
         ny_encoding = mx.fast.rope(
@@ -76,16 +97,16 @@ class HeatDiffusionModel(nn.Module):
             dims=self.spatial_features,
             traditional=True,
             base=100,
-            scale=1, # / np.sqrt(self.spatial_features / 2),
-            offset=0
+            scale=1,  # / np.sqrt(self.spatial_features / 2),
+            offset=0,
         )
         nx_encoding = mx.fast.rope(
             nx_encoding,
             dims=self.spatial_features,
             traditional=True,
-            base= 100,
-            scale=1, # / np.sqrt(self.spatial_features / 2),
-            offset=0
+            base=100,
+            scale=1,  # / np.sqrt(self.spatial_features / 2),
+            offset=0,
         )
 
         return ny_encoding, nx_encoding
@@ -95,16 +116,18 @@ class HeatDiffusionModel(nn.Module):
         temporal_encoding = self.positional_encoding_t(mx.arange(self.seq_len))
 
         # Expand dimensions using mx.expand_dims to match RoPE's requirements
-        temporal_encoding = mx.expand_dims(temporal_encoding, axis=0)  # Shape: [1, seq_len, embed_dim]
+        temporal_encoding = mx.expand_dims(
+            temporal_encoding, axis=0
+        )  # Shape: [1, seq_len, embed_dim]
 
         # Apply RoPE with the required parameters on the expanded temporal encoding
         temporal_encoding = mx.fast.rope(
             temporal_encoding,
             dims=self.embed_dim,
             traditional=True,
-            base= 100,
-            scale=1, # / np.sqrt(self.embed_dim / 2),
-            offset=0
+            base=100,
+            scale=1,  # / np.sqrt(self.embed_dim / 2),
+            offset=0,
         )
 
         return temporal_encoding
@@ -116,8 +139,9 @@ class HeatDiffusionModel(nn.Module):
         pos_enc_ny, pos_enc_nx = self.spatial_positional_encoding()
         src_pos_enc_y = src_expanded + pos_enc_ny
         src_pos_enc = src_pos_enc_y + pos_enc_nx
-        src_pos_enc_flattened = src_pos_enc[:, :, :, :].reshape(-1, seq_len,
-                                                                self.ny * self.nx * self.spatial_features)
+        src_pos_enc_flattened = src_pos_enc[:, :, :, :].reshape(
+            -1, seq_len, self.ny * self.nx * self.spatial_features
+        )
         src_projected = self.projection_spatial_enc(src_pos_enc_flattened)
 
         temporal_enc = self.temporal_positional_encoding(batch_size)
@@ -126,7 +150,9 @@ class HeatDiffusionModel(nn.Module):
         alpha_reshaped = alpha.reshape(-1, 1)
         alpha_embed = self.diffusivity_embedding(alpha_reshaped)
         alpha_embed_expanded = mx.expand_dims(alpha_embed, axis=1)
-        alpha_embed_expanded = mx.broadcast_to(alpha_embed_expanded, (batch_size, seq_len, self.embed_dim))
+        alpha_embed_expanded = mx.broadcast_to(
+            alpha_embed_expanded, (batch_size, seq_len, self.embed_dim)
+        )
         src_encoded += alpha_embed_expanded
 
         encoded = self.transformer_encoder(src_encoded, mask=self.mask)
@@ -166,9 +192,10 @@ def calculate_spatial_derivative_2D(T, dx, dy):
         - d2T_dy2 : numpy.ndarray or mlx.core.array
             The second derivative of `T` with respect to the y direction, with shape (batch_size, time_steps, ny-2, nx-2).
     """
-    d2T_dx2 = (T[:, :, 1:-1, 2:] - 2 * T[:, :, 1:-1, 1:-1] + T[:, :, 1:-1, :-2]) / dx ** 2
-    d2T_dy2 = (T[:, :, 2:, 1:-1] - 2 * T[:, :, 1:-1, 1:-1] + T[:, :, :-2, 1:-1]) / dy ** 2
+    d2T_dx2 = (T[:, :, 1:-1, 2:] - 2 * T[:, :, 1:-1, 1:-1] + T[:, :, 1:-1, :-2]) / dx**2
+    d2T_dy2 = (T[:, :, 2:, 1:-1] - 2 * T[:, :, 1:-1, 1:-1] + T[:, :, :-2, 1:-1]) / dy**2
     return d2T_dx2, d2T_dy2
+
 
 def calculate_temporal_derivative_2D(T, dt):
     """
@@ -238,12 +265,16 @@ def physics_informed_loss_2D(model_output, src_alphas, src_dts, dx, dy):
     dT_dt = calculate_temporal_derivative_2D(model_output_pre_aligned, src_dts)
 
     alphas_reshaped = src_alphas.reshape(-1, 1, 1, 1)
-    residuals = dT_dt - alphas_reshaped * (d2T_dx2[:, :-1, :, :] + d2T_dy2[:, :-1, :, :])
+    residuals = dT_dt - alphas_reshaped * (
+        d2T_dx2[:, :-1, :, :] + d2T_dy2[:, :-1, :, :]
+    )
 
     residual_std = mx.sqrt(mx.var(residuals) + 1e-8)
     normalized_residuals = residuals  # / residual_std
 
-    pi_loss = nn.losses.mse_loss(normalized_residuals, mx.zeros_like(normalized_residuals), reduction='mean')
+    pi_loss = nn.losses.mse_loss(
+        normalized_residuals, mx.zeros_like(normalized_residuals), reduction="mean"
+    )
 
     return pi_loss
 
@@ -280,16 +311,25 @@ def compute_boundary_loss_2D(model_output, target):
     top_boundary_pred = model_output[:, :, 0, :]
     bottom_boundary_pred = model_output[:, :, -1, :]
 
-    left_boundary_loss = nn.losses.mse_loss(left_boundary_pred, expected_left_boundary,
-                                            reduction='mean')
-    right_boundary_loss = nn.losses.mse_loss(right_boundary_pred, expected_right_boundary,
-                                             reduction='mean')
-    top_boundary_loss = nn.losses.mse_loss(top_boundary_pred, expected_top_boundary,
-                                           reduction='mean')
-    bottom_boundary_loss = nn.losses.mse_loss(bottom_boundary_pred, expected_bottom_boundary,
-                                              reduction='mean')
+    left_boundary_loss = nn.losses.mse_loss(
+        left_boundary_pred, expected_left_boundary, reduction="mean"
+    )
+    right_boundary_loss = nn.losses.mse_loss(
+        right_boundary_pred, expected_right_boundary, reduction="mean"
+    )
+    top_boundary_loss = nn.losses.mse_loss(
+        top_boundary_pred, expected_top_boundary, reduction="mean"
+    )
+    bottom_boundary_loss = nn.losses.mse_loss(
+        bottom_boundary_pred, expected_bottom_boundary, reduction="mean"
+    )
 
-    boundary_loss = left_boundary_loss + right_boundary_loss + top_boundary_loss + bottom_boundary_loss
+    boundary_loss = (
+        left_boundary_loss
+        + right_boundary_loss
+        + top_boundary_loss
+        + bottom_boundary_loss
+    )
     return boundary_loss
 
 
@@ -317,8 +357,9 @@ def compute_initial_loss_2D(model_output, target, n_initial):
     expected_initial_frames = target[:, 0:n_initial, :, :]
     initial_frames_predicted = model_output[:, 0:n_initial, :, :]
 
-    initial_frames_loss = nn.losses.mse_loss(initial_frames_predicted,
-                                             expected_initial_frames, reduction='mean')
+    initial_frames_loss = nn.losses.mse_loss(
+        initial_frames_predicted, expected_initial_frames, reduction="mean"
+    )
 
     return initial_frames_loss
 
@@ -365,14 +406,16 @@ def loss_fn_2D(model, src, target, n_initial, src_alphas, src_dts, dx, dy):
 
     model_output = model(src, src_alphas)
 
-    mse_loss = nn.losses.mse_loss(model_output, target, reduction='mean')
+    mse_loss = nn.losses.mse_loss(model_output, target, reduction="mean")
     pi_loss = physics_informed_loss_2D(model_output, src_alphas, src_dts, dx, dy)
     boundary_loss = compute_boundary_loss_2D(model_output, target)
     initial_loss = compute_initial_loss_2D(model_output, target, n_initial)
 
-    total_loss = (mse_loss + boundary_loss_weight * boundary_loss
-                  + physics_loss_weight * pi_loss + initial_loss_weight * initial_loss)
+    total_loss = (
+        mse_loss
+        + boundary_loss_weight * boundary_loss
+        + physics_loss_weight * pi_loss
+        + initial_loss_weight * initial_loss
+    )
 
     return total_loss
-
-

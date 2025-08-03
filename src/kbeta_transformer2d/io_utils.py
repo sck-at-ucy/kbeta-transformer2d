@@ -10,10 +10,13 @@ from typing import Tuple
 
 __all__ = ["setup_save_directories", "setup_load_directories"]
 
+
 # ── copy‑paste exactly your two directory helpers ─────────────────────────
-def setup_save_directories(run_name: str, restart_epoch: int | None = None
-                           ) -> Tuple[str, str, str, str]:
+def setup_save_directories(
+    run_name: str, restart_epoch: int | None = None
+) -> Tuple[str, str, str, str]:
     import os
+
     script_dir = os.path.dirname(__file__)
     output_dir = os.path.join(script_dir, "OUTPUTS")
     os.makedirs(output_dir, exist_ok=True)
@@ -21,9 +24,9 @@ def setup_save_directories(run_name: str, restart_epoch: int | None = None
     if restart_epoch is not None:
         run_name = f"{run_name}_restart_epoch_{restart_epoch}"
 
-    save_dir_path      = os.path.join(output_dir, f"Transformer_save_BeyondL_{run_name}")
-    dataset_save_path  = os.path.join(output_dir, f"Datasets_save_BeyondL_{run_name}")
-    frameplots_path    = os.path.join(output_dir, f"Heatmaps_BeyondL_{run_name}")
+    save_dir_path = os.path.join(output_dir, f"Transformer_save_BeyondL_{run_name}")
+    dataset_save_path = os.path.join(output_dir, f"Datasets_save_BeyondL_{run_name}")
+    frameplots_path = os.path.join(output_dir, f"Heatmaps_BeyondL_{run_name}")
     inference_mse_path = os.path.join(output_dir, f"InferenceMSE_BeyondL_{run_name}")
 
     for p in (save_dir_path, dataset_save_path, frameplots_path, inference_mse_path):
@@ -32,25 +35,37 @@ def setup_save_directories(run_name: str, restart_epoch: int | None = None
     return save_dir_path, dataset_save_path, frameplots_path, inference_mse_path
 
 
-def setup_load_directories(run_name: str, checkpoint_epoch: int
-                           ) -> Tuple[str, str]:
+def setup_load_directories(run_name: str, checkpoint_epoch: int) -> Tuple[str, str]:
     import os
+
     script_dir = os.path.dirname(__file__)
     output_dir = os.path.join(script_dir, "OUTPUTS")
 
-    load_dir_path     = os.path.join(output_dir, f"Transformer_save_BeyondL_{run_name}")
+    load_dir_path = os.path.join(output_dir, f"Transformer_save_BeyondL_{run_name}")
     dataset_load_path = os.path.join(output_dir, f"Datasets_save_BeyondL_{run_name}")
 
     if not os.path.exists(load_dir_path):
         raise FileNotFoundError(f"Checkpoint directory {load_dir_path} does not exist!")
     if not os.path.exists(dataset_load_path):
-        raise FileNotFoundError(f"Dataset directory {dataset_load_path} does not exist!")
+        raise FileNotFoundError(
+            f"Dataset directory {dataset_load_path} does not exist!"
+        )
 
     return load_dir_path, dataset_load_path
 
+
 # Function to save model and optimizer state periodically
-def save_model_and_optimizer(model, optimizer, mx_random_state, config, current_epoch, dir_path, model_base_file_name, optimizer_base_file_name,
-                             hyper_base_file_name):
+def save_model_and_optimizer(
+    model,
+    optimizer,
+    mx_random_state,
+    config,
+    current_epoch,
+    dir_path,
+    model_base_file_name,
+    optimizer_base_file_name,
+    hyper_base_file_name,
+):
     """
     Saves the model's state, weights, optimizer state, random state, and configuration at the specified epoch.
 
@@ -83,7 +98,9 @@ def save_model_and_optimizer(model, optimizer, mx_random_state, config, current_
         os.makedirs(dir_path)
 
     model_file_name = f"{model_base_file_name}_epoch_{current_epoch}.pkl"
-    weights_file_name = f"{model_base_file_name}_weights_epoch_{current_epoch}.safetensors"
+    weights_file_name = (
+        f"{model_base_file_name}_weights_epoch_{current_epoch}.safetensors"
+    )
     # optimizer_file_name = f"{optimizer_base_file_name}_epoch_{current_epoch}.safetensors"
     optimizer_file_name = f"{optimizer_base_file_name}_epoch_{current_epoch}.pkl"
     random_state_file_name = f"random_state_epoch_{current_epoch}.pkl"
@@ -91,7 +108,7 @@ def save_model_and_optimizer(model, optimizer, mx_random_state, config, current_
 
     # Save model state (parameters only)
     model_file_path = os.path.join(dir_path, model_file_name)
-    with open(model_file_path, 'wb') as f:
+    with open(model_file_path, "wb") as f:
         pickle.dump(model.parameters(), f)
         # pickle.dump(model.state, f)
 
@@ -101,25 +118,36 @@ def save_model_and_optimizer(model, optimizer, mx_random_state, config, current_
 
     # Save optimizer state
     optimizer_file_path = os.path.join(dir_path, optimizer_file_name)
-    with open(optimizer_file_path, 'wb') as f:
+    with open(optimizer_file_path, "wb") as f:
         pickle.dump(optimizer.state, f)
 
     # Save random state
     random_state_path = os.path.join(dir_path, random_state_file_name)
-    with open(random_state_path, 'wb') as f:
+    with open(random_state_path, "wb") as f:
         pickle.dump(mx_random_state, f)
 
     # Save training configuration
-    config['current_epoch'] = current_epoch
+    config["current_epoch"] = current_epoch
     hyper_file_path = os.path.join(dir_path, config_file_name)
-    with open(hyper_file_path, 'w') as json_file:
+    with open(hyper_file_path, "w") as json_file:
         json.dump(config, json_file, indent=4)
 
-    print(f"Model, optimizer, random state, and configuration saved at epoch {current_epoch}.")
+    print(
+        f"Model, optimizer, random state, and configuration saved at epoch {current_epoch}."
+    )
 
 
-def load_model_and_optimizer(model, optimizer, mx_random_state, dir_path, model_base_file_name, optimizer_base_file_name,
-                             hyper_base_file_name, checkpoint_epoch, comparison=True):
+def load_model_and_optimizer(
+    model,
+    optimizer,
+    mx_random_state,
+    dir_path,
+    model_base_file_name,
+    optimizer_base_file_name,
+    hyper_base_file_name,
+    checkpoint_epoch,
+    comparison=True,
+):
     """
     Loads the model state, optimizer state, random state, and configuration from a specific checkpoint.
 
@@ -161,7 +189,9 @@ def load_model_and_optimizer(model, optimizer, mx_random_state, dir_path, model_
     """
     # Construct the file paths for model, optimizer, random state, and configuration
     model_file_name = f"{model_base_file_name}_epoch_{checkpoint_epoch}.pkl"
-    weights_file_name = f"{model_base_file_name}_weights_epoch_{checkpoint_epoch}.safetensors"
+    weights_file_name = (
+        f"{model_base_file_name}_weights_epoch_{checkpoint_epoch}.safetensors"
+    )
     optimizer_file_name = f"{optimizer_base_file_name}_epoch_{checkpoint_epoch}.pkl"
     random_state_file_name = f"random_state_epoch_{checkpoint_epoch}.pkl"
     config_file_name = f"{hyper_base_file_name}_epoch_{checkpoint_epoch}.json"
@@ -173,27 +203,32 @@ def load_model_and_optimizer(model, optimizer, mx_random_state, dir_path, model_
     config_file_path = os.path.join(dir_path, config_file_name)
 
     # Check if all necessary files exist for loading
-    if os.path.exists(model_file_path) and os.path.exists(optimizer_file_path) and os.path.exists(
-            random_state_file_path) and os.path.exists(config_file_path) and os.path.exists(weights_file_path):
+    if (
+        os.path.exists(model_file_path)
+        and os.path.exists(optimizer_file_path)
+        and os.path.exists(random_state_file_path)
+        and os.path.exists(config_file_path)
+        and os.path.exists(weights_file_path)
+    ):
         # Load model state (parameters only)
-        with open(model_file_path, 'rb') as f:
+        with open(model_file_path, "rb") as f:
             loaded_parameters = pickle.load(f)
 
         # Load optimizer state
-        with open(optimizer_file_path, 'rb') as f:
+        with open(optimizer_file_path, "rb") as f:
             loaded_optimizer_state = pickle.load(f)
 
         # Load random state
-        with open(random_state_file_path, 'rb') as f:
+        with open(random_state_file_path, "rb") as f:
             loaded_random_state = pickle.load(f)
 
         # Load training configuration
-        with open(config_file_path, 'r') as json_file:
+        with open(config_file_path, "r") as json_file:
             loaded_config = json.load(json_file)
-            #config = loaded_config
+            # config = loaded_config
 
         # Get the start epoch from the configuration
-        start_epoch = loaded_config.get('current_epoch', 0)
+        start_epoch = loaded_config.get("current_epoch", 0)
 
         # Load current states to compare with the loaded states
         current_optimizer_state = optimizer.state
@@ -202,25 +237,41 @@ def load_model_and_optimizer(model, optimizer, mx_random_state, dir_path, model_
 
         # Compare the states for consistency (useful when live saving-and_reloading during training for debugging)
         if comparison:
-            if compare_dict_states(current_optimizer_state, loaded_optimizer_state, 'optimizer state'):
-                print('Optimizer state matches.')
+            if compare_dict_states(
+                current_optimizer_state, loaded_optimizer_state, "optimizer state"
+            ):
+                print("Optimizer state matches.")
             else:
                 print("Optimizer state mismatch detected.")
 
-            if compare_list_states(current_random_state, loaded_random_state, 'random state'):
+            if compare_list_states(
+                current_random_state, loaded_random_state, "random state"
+            ):
                 print("Random state matches.")
             else:
                 print("Random state mismatch detected.")
 
-            if compare_dict_states(current_model_parameters, loaded_parameters, 'model state'):
+            if compare_dict_states(
+                current_model_parameters, loaded_parameters, "model state"
+            ):
                 print("Model state matches.")
             else:
                 print("Model state mismatch detected.")
 
-            print(f"Model, optimizer, random state, and configuration loaded from {dir_path} at epoch {checkpoint_epoch}.")
+            print(
+                f"Model, optimizer, random state, and configuration loaded from {dir_path} at epoch {checkpoint_epoch}."
+            )
     else:
         # If no checkpoint is found, start from scratch
         start_epoch = 0
-        print(f"No saved model found at epoch {checkpoint_epoch}. Starting training from scratch.")
+        print(
+            f"No saved model found at epoch {checkpoint_epoch}. Starting training from scratch."
+        )
 
-    return start_epoch, loaded_optimizer_state, loaded_random_state, loaded_parameters, loaded_config
+    return (
+        start_epoch,
+        loaded_optimizer_state,
+        loaded_random_state,
+        loaded_parameters,
+        loaded_config,
+    )

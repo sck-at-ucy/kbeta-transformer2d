@@ -1,49 +1,39 @@
 [build-system]
-requires      = ["setuptools>=64", "wheel"]
+requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name            = "kbeta-transformer2d"
-version         = "0.0.0a0"
-description     = "MLX Transformer‑2D demo workload for the Kourkoutas‑β optimiser"
-authors         = [{name = "Stavros Kassinos", email = "kassinos.stavros@ucy.ac.cy"}]
-readme          = "README.md"
+name = "kbeta-transformer2d"
+version = "0.0.0a1"
+description = "2‑D heat‑diffusion Transformer demo for the Kourkoutas‑β optimiser"
+authors = [{name = "Stavros Kassinos", email = "kassinos.stavros@ucy.ac.cy"}]
+readme = "README.md"
 requires-python = ">=3.9"
-dependencies    = ["mlx", "numpy"]
+
+# --- runtime deps (imported at run‑time) ----------
+dependencies = [
+    "numpy",
+    "pyyaml",
+    "mlx>=0.27.1",
+    "matplotlib>=3.7",      # for plot_utils
+    "seaborn>=0.13",        # violin / density plots
+    "pandas>=2.0",          # violin‑plot helper
+    "kbeta>=0.0.0a0",        # kourkoutas optimizer
+]
 
 [project.optional-dependencies]
-dev = ["pytest", "ruff", "build"]
-#dev = ["pytest", "ruff", "build", "kbeta @ git+https://github.com/sck-at-ucy/kbeta.git@dev"]
-#dev = ["pytest", "ruff", "build", "kbeta @ file:///Users/m2/PycharmProjects/kbeta"]
-#dev = [
-#    # use the main branch (public) – adjust if private
-#    "kbeta @ git+https://github.com/sck-at-ucy/kbeta.git@main",
-#    "pytest",
-#    "ruff",
-#    "build"
-#]
+dev = [
+    "pytest",
+    "ruff",
+    "black",
+    "mypy",
+    "build",
+    # local sibling package (ref uses main by default; dev‑branch not required)
+    #"kbeta @ file:///Users/m2/PycharmProjects/kbeta",           # local path
+    # If CI needs it from GitHub (private‑repo token handled in workflow):
+    # "kbeta @ git+https://github.com/sck-at-ucy/kbeta.git@main",
+]
 
-[tool.setuptools]
-package-dir = {"" = "src"}        # ← map root‑package namespace to “src/”
-
-[tool.setuptools.packages.find]    # ← table header **must** end with “find”
-where = ["src"]                    # ← list (not a dict!)
-include = ["kbeta_transformer2d*"]   # package lives in src/kbeta_transformer2d
-
-# -------------------------------------------
-#  Ruff – linting & formatting configuration
-# -------------------------------------------
-[tool.ruff]
-target-version = "py311"
-line-length    = 88
-src            = ["src", "examples"]
-exclude        = [".venv*", "tests/.venv*"]
-
-# ----- Linter rules -------------------------
-[tool.ruff.lint]
-select = ["E", "F", "B", "I", "UP"]
-ignore = ["E501"]       # long lines handled by formatter
-
-# ----- Formatter (Black‑compatible) ---------
-[tool.ruff.format]
-quote-style = "double"
+[tool.setuptools.packages.find]
+where   = ["src"]
+include = ["kbeta_transformer2d*"]
