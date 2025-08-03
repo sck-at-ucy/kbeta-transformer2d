@@ -23,7 +23,8 @@
 ## Why a 2‑D Transformer?
 
 * **Spatial‑temporal diffusion** appears in countless engineering problems (heat flow, pollutant transport, …).  
-* A *purely data‑driven* Transformer offers a clean stress‑test for the optimiser—no PDE loss terms, no hand‑tuned schedulers.  
+* A *purely data‑driven* Transformer offers a clean stress‑test for the optimiser
+* Solver‑free physics loss: we embed the heat‑equation residual as an analytic term, so no back‑prop through external PDE solvers is required—MLX autograd still handles all neural‑network gradients.—no PDE loss terms, no hand‑tuned schedulers.  
 * The model scales to **512 × 512 meshes on Apple Silicon** while remaining <2 M parameters; perfect for rapid experimentation.
 
 ---
