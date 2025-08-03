@@ -9,14 +9,14 @@
 ## Table of Contents
 1. [Why a 2‑D Transformer?](#why-a-2d-transformer)
 2. [Model highlights](#Model highlights)
-2. [Project layout](#project-layout)
-3. [Quick start](#quick-start)
-4. [Training from scratch](#training-from-scratch)
-5. [Using your own datasets](#using-your-own-datasets)
-6. [Tests & linting](#tests--linting)
-7. [Relation to Kourkoutas‑β](#relation-to-kourkoutas-β)
-8. [Citation](#citation)
-9. [License](#license)
+3. [Project layout](#project-layout)
+4. [Quick start](#quick-start)
+5. [Training from scratch](#training-from-scratch)
+6. [Using your own datasets](#using-your-own-datasets)
+7. [Tests & linting](#tests--linting)
+8. [Relation to Kourkoutas‑β](#relation-to-kourkoutas-β)
+9. [Citation](#citation)
+10. [License](#license)
 
 ---
 
