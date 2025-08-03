@@ -1,5 +1,6 @@
 import mlx.core as mx
-from kbeta_transformer2d import HeatDiffusionModel, generate_datasets
+
+from kbeta_transformer2d import HeatDiffusionModel
 
 
 def test_forward():

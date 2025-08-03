@@ -8,6 +8,8 @@ import os
 import pickle
 from typing import Tuple
 
+from .utils import compare_dict_states, compare_list_states
+
 __all__ = ["setup_save_directories", "setup_load_directories"]
 
 
