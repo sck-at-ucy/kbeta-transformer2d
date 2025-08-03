@@ -3,7 +3,6 @@
 |--------|--------|
 | main   | ![CI](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg) |
 | dev    | ![CI‑dev](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg?branch=dev) |
-| integr/bring-all | ![CI‑integr](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg?branch=integr%2Fbring-all) |
 
 # kbeta-transformer2d – *Trainining a 2D Data-Driven Transformer using Kourkoutas‑β Optimiser*   🌞🦎🚀📈
 
