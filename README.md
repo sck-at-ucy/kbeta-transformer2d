@@ -8,7 +8,7 @@
 
 ## Table of Contents
 1. [Why a 2‑D Transformer?](#why-a-2d-transformer)
-2. [Model highlights – what’s special about HeatDiffusion‑Transformer‑2D](#model-highlights-whats-special-about-heatdiffusion-transformer-2d)
+2. [Model highlights – what’s special about HeatDiffusion‑Transformer‑2D](#model-highlights--whats-special-about-heatdiffusion-transformer-2d)
 3. [Project layout](#project-layout)
 4. [Quick start](#quick-start)
 5. [Training from scratch](#training-from-scratch)
@@ -28,7 +28,7 @@
 
 ---
 
-## Model highlights – what’s special about **HeatDiffusion‑Transformer‑2D**
+## Model highlights – what’s special about HeatDiffusion‑Transformer‑2D
 
 * **Patch‑wise attention on 2‑D grids**  
   The input tensor is reshaped into *(T × H × W)* patches, letting the model
