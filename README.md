@@ -1,74 +1,47 @@
-## [![CI (macOS arm64)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg?branch=)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml)
-| Branch | Status |
-|--------|--------|
-| main   | ![CI](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg) |
-| dev    | ![CI‑dev](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg?branch=dev) |
+# kbeta‑transformer2d – *2‑D Heat‑Diffusion Transformer trained with Kourkoutas‑β*  🌞🦎🚀📈
 
-# kbeta-transformer2d – *Trainining a 2D Data-Driven Transformer using Kourkoutas‑β Optimiser*   🌞🦎🚀📈
+[![CI (macOS arm64)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml)
 
-> **Research code for our upcoming paper
-> “Kourkoutas‑β: Soft‑max Momentum with Adaptive Variance for Mesh‑Accelerated Deep Learning.”**
-> The repository ships the optimiser **plus two demonstration workloads** (a 2‑D data‑driven Transformer and a 3‑D PINN).
+> **Research companion code for the upcoming paper> “Kourkoutas‑β – Soft‑max Momentum with Adaptive Variance for Mesh‑Accelerated Deep Learning.”**> > This repository contains the full **2‑D data‑driven Transformer** workload that accompanies the optimiser > (see the separate [`kbeta`](https://github.com/sck-at-ucy/kbeta) repo), plus lightweight utilities for training, > evaluation and visualisation.
 
 ---
 
 ## Table of Contents
-1. [Key ideas](#key-ideas)
+1. [Why a 2‑D Transformer?](#why-a-2d-transformer)
 2. [Project layout](#project-layout)
 3. [Quick start](#quick-start)
-4. [Using Kourkoutas‑β in your own model](#minimal-example)
-5. [Running the demo workloads](#demo-workloads)
-6. [Tests & linting](#tests--linting)
-7. [Citation](#citation)
-8. [License](#license)
-9. [Contributing & roadmap](#contributing--roadmap)
+4. [Training from scratch](#training-from-scratch)
+5. [Using your own datasets](#using-your-own-datasets)
+6. [Tests & linting](#tests--linting)
+7. [Relation to Kourkoutas‑β](#relation-to-kourkoutas-β)
+8. [Citation](#citation)
+9. [License](#license)
 
 ---
 
-## Key ideas
+## Why a 2‑D Transformer?
 
-* **Soft‑max variance tracking** to tame gradient spikes.
-* **Two β₂ parameters**:
-  *β₂_min* for ultra‑fast warm‑up, *β₂_max* for long‑term stability.
-* **Layer‑wise adaptive tiny‑values** (ϵ, spike dampers) that shrink with training progress.
-* 100 % **Apple‑MLX** compatible – no PyTorch required.
-
-See detailed derivations in the forthcoming pre‑print (link will appear here).
-
----
-
-## Conceptual overview
-
-### High‑level intuition – the “desert lizard” view
-*Kourkoutas‑β* is an Adam‑style optimiser whose second‑moment decay **β₂** is no longer a hard‑wired constant.
-Instead, every update computes a **sun‑spike score**—a single, cheap scalar that compares the current gradient magnitude to its exponentially‑weighted history.  We then **map that score to β₂ on the fly**:
-
-| Sun‑spike | Lizard metaphor | Adaptive behaviour |
-|-----------|-----------------|--------------------|
-| **High**  | The desert sun is scorching — the lizard is “fully warmed up” and sprints. | **Lower β₂ toward β₂,min** → second‑moment memory shortens, allowing rapid, large parameter moves. |
-| **Low**   | It’s cool; the lizard feels sluggish and takes cautious steps. | **Raise β₂ toward β₂,max** → longer memory, filtering noise and producing steadier updates. |
-
-Because the sun‑spike diagnostic **exists only in Kourkoutas‑β**, the method can be viewed as *Adam with a temperature‑controlled β₂ schedule*: warm gradients trigger exploration; cooler gradients favour exploitation and stability.
+* **Spatial‑temporal diffusion** appears in countless engineering problems (heat flow, pollutant transport, …).  
+* A *purely data‑driven* Transformer offers a clean stress‑test for the optimiser—no PDE loss terms, no hand‑tuned schedulers.  
+* The model scales to **512 × 512 meshes on Apple Silicon** while remaining <2 M parameters; perfect for rapid experimentation.
 
 ---
 
 ## Project layout
 
 ```
-kbeta
-├── src/kbeta/               # pip package
-│   ├── __init__.py          # re‑exports optimiser
-│   └── optim/
-│       ├── __init__.py
-│       └── kbeta_softmax.py # <-- KourkoutasSoftmaxFlex implementation
-│
-├── workloads/
-│   ├── transformer/         # 2‑D heat‑diffusion demo
-│   └── pinn3d/              # 3‑D PINN demo
-│
-├── tests/                   # pytest suite (incl. smoke test)
-├── docs/                    # sphinx material (optional)
-├── pyproject.toml
+kbeta-transformer2d
+├── src/kbeta_transformer2d/
+│   ├── __init__.py          # public API
+│   ├── data.py              # mesh generation + loaders
+│   ├── model.py             # Transformer & loss
+│   ├── optim_factory.py     # Kourkoutas‑β wiring
+│   ├── train.py             # training / eval loops
+│   ├── plot_utils.py        # visualisations
+│   └── demo_heat2d.py       # CLI entry‑point
+├── configs/
+│   └── heat2d.yml           # default hyper‑params
+├── tests/                   # smoke tests
 └── README.md                # you are here
 ```
 
@@ -77,101 +50,88 @@ kbeta
 ## Quick start
 
 ```bash
-# 1. clone *your* fork (recommended) and cd into it
-git clone git@github.com:<YOUR-USERNAME>/kbeta.git
-cd kbeta
-
-# 2. create a fresh virtualenv
+# 1) clone & set up a fresh virtualenv (Apple Silicon, Python 3.11)
+git clone https://github.com/sck-at-ucy/kbeta-transformer2d.git
+cd kbeta-transformer2d
 python -m venv .venv && source .venv/bin/activate
 
-# 3. editable install + dev extras
-pip install -e ".[dev]"
+# 2) install this package *and* the private optimiser
+pip install -e ".[dev]"                    # installs mlx, ruff, pytest, …
+pip install "kbeta @ git+https://github.com/sck-at-ucy/kbeta.git@main"
 
-# 4. run the ultra‑short smoke test
-pytest -q                       # should print ‘1 passed’
+# 3) verify everything works
+pytest -q                                  # ➜ 2 tests should pass
 ```
 
 ---
 
-## Minimal example
-
-```python
-import mlx.core as mx
-from kbeta.optim import KourkoutasSoftmaxFlex
-import mlx.nn as nn
-
-# dummy single‑parameter model
-class Dummy(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.w = mx.zeros((3,))
-
-    def __call__(self, x):
-        return (self.w * x).sum()
-
-model = Dummy()
-optim = KourkoutasSoftmaxFlex(learning_rate=1e-3)
-optim.init(model.parameters())
-
-x = mx.ones((3,))
-loss, grads = nn.value_and_grad(model)(model, x)
-optim.update(model, grads)  # ← one training step
-```
-
----
-
-## Demo workloads
-
-| Folder | Paper section | What it shows | How to run |
-|--------|---------------|---------------|------------|
-| `workloads/transformer` | § 4.1 | 2‑D heat‑diffusion **data‑driven Transformer** trained with Kourkoutas‑β vs Adam | `python -m transformer.Train --config configs/base.yaml` |
-| `workloads/pinn3d` | § 4.2 | 3‑D physics‑informed neural network (**PINN**) on a diffusion PDE | `python train_pinn3d.py --optimizer kourkoutas` |
-
-All configs are pure YAML; command‑line `--override KEY=VAL` flags allow rapid sweeps.
-
----
-
-## Tests & linting
+## Training from scratch
 
 ```bash
-pytest                 # unit tests
-ruff check .           # style / import / naming
-pre-commit run --all   # everything (if you installed the hooks)
+python -m kbeta_transformer2d.demo_heat2d         configs/heat2d.yml                         --override model_params.epochs=30
 ```
 
-Continuous Integration (CI) will refuse a PR that fails any of the above.
+The YAML file controls **mesh size, model depth, batch‑size, optimiser settings, plotting**, etc.  
+Any key can be overridden on the CLI via `--override key.subkey=value`.
+
+### Collected artefacts
+
+* checkpoints every *n* epochs (`.npz`)
+* optimiser state for restartability
+* `.json` run config
+* optional GIFs of predicted vs truth heat maps
+
+---
+
+## Using your own datasets
+
+1. Provide a NumPy array shaped `[t, ny, nx]` with your temperature fields.  
+2. Adjust `geometry.nx, geometry.ny` in `configs/heat2d.yml`.  
+3. Replace the `generate_datasets()` stub in **data.py** with your loader.
+
+That’s it—no code changes in the model or training loop are required.
+
+---
+
+## Tests & linting
+
+```bash
+pytest                 # unit + smoke tests
+ruff check .           # style / quality gate
+mypy src               # (optional) static typing
+```
+
+Our GitHub Action (macOS‑14, MLX back‑end) blocks any PR that fails the above.
+
+---
+
+## Relation to Kourkoutas‑β
+
+`kbeta_transformer2d` **does not re‑implement the optimiser**; it *consumes* it:  
+`optim_factory.py` instantiates `KourkoutasSoftmaxFlex` from the `kbeta` package and demonstrates adaptive‑β₂ in a challenging, mesh‑based setting.  
+If you only need the optimiser, install **`kbeta`**.  If you want a ready‑made workload to benchmark against Adam, install **this** repo.
 
 ---
 
 ## Citation
 
 ```
-@article{Kourkoutas2025,
-  title   = {Kourkoutas‑β: Soft‑max Momentum with Adaptive Variance},
-  author  = {S. Kassinos and et al.},
-  journal = {ArXiv preprint},
-  year    = {2025},
-  url     = {https://arxiv.org/abs/XXXXX}
+@misc{Kassinos2025Transformer2D,
+  title        = {Data‑Driven 2‑D Heat‑Diffusion Transformer – Companion Code},
+  author       = {Stavros Kassinos and others},
+  howpublished = {GitHub},
+  year         = {2025},
+  note         = {https://github.com/sck-at-ucy/kbeta-transformer2d}
 }
 ```
+
+Please also cite the main *Kourkoutas‑β* paper.
 
 ---
 
 ## License
 
-This work is distributed under the **MIT License**—see [`LICENSE`](LICENSE) for details.
+Released under the **MIT License**.  See [`LICENSE`](LICENSE) for the full text.
 
----
+Happy experimenting — and may your gradients be sunny 🌞🦎🚀📈
 
-## Contributing & roadmap
-
-We welcome issues & PRs!
-Planned milestones:
-
-1. **v0.1.0** – optimiser + 2‑D Transformer demo (public).
-2. **v0.2.0** – 3‑D PINN demo, mixed‑precision benchmarks.
-3. **v1.0.0** – journal paper release, pip wheels for macOS/Apple Silicon & Linux.
-
-If you run into trouble, open an issue or ping `@stavros‑k` on GitHub.
-
-Happy sprinting in the (numerical) desert 🌞🦎🚀📈
