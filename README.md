@@ -8,6 +8,7 @@
 
 ## Table of Contents
 1. [Why a 2‑D Transformer?](#why-a-2d-transformer)
+2. [Model highlights](#Model highlights)
 2. [Project layout](#project-layout)
 3. [Quick start](#quick-start)
 4. [Training from scratch](#training-from-scratch)
@@ -24,6 +25,40 @@
 * **Spatial‑temporal diffusion** appears in countless engineering problems (heat flow, pollutant transport, …).  
 * A *purely data‑driven* Transformer offers a clean stress‑test for the optimiser—no PDE loss terms, no hand‑tuned schedulers.  
 * The model scales to **512 × 512 meshes on Apple Silicon** while remaining <2 M parameters; perfect for rapid experimentation.
+
+---
+
+## Model highlights – what’s special about **HeatDiffusion‑Transformer‑2D**
+
+* **Patch‑wise attention on 2‑D grids**  
+  The input tensor is reshaped into *(T × H × W)* patches, letting the model
+  treat every spatial location symmetrically while still exploiting MX‑GPU
+  tensor cores efficiently.
+
+* **Dual masking modes**  
+  *Causal* masks give an autoregressive model useful for long‑horizon rollout
+  tests; *block* masks allow full‑context training when future frames are
+  available.
+
+* **RoPE (Rotary Positional Encoding)** in the **time** dimension  
+  A single line swap lets you switch between vanilla sinusoidal encodings and
+  RoPE, which markedly improves extrapolation beyond the training window.
+
+* **Activation quantisation ready**  
+  All dense / conv projections are implemented with `mlx.nn.quantize_lin`,
+  giving you 8‑bit weights on Apple Silicon **without** code changes.
+
+* **Learnable Fourier feature injection**  
+  Two Fourier feature channels are concatenated to every patch embedding,
+  stabilising training on very fine meshes.
+
+* **Tiny footprint** – 2.3 M parameters  
+  Fits comfortably on a single M‑series GPU core at batch‑size 32, even in
+  FP16.
+
+* **One‑liner optimiser swap**  
+  The model inherits its optimiser object, so comparing Adam vs Kourkoutas‑β
+  is literally *one* YAML entry.
 
 ---
 
