@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import os
 import time
-from typing import Any, Dict
+from typing import Any
 
 import mlx.core as mx
 import mlx.nn as nn
@@ -52,7 +52,7 @@ def train_and_validate(
     train_step,
     data_loader_2D,
     evaluate_step,
-    cfg: Dict[str, Any],
+    cfg: dict[str, Any],
     train_data,
     train_alphas,
     train_dts,
@@ -163,8 +163,6 @@ def train_and_validate(
             total_val_loss += val_loss.item()
             num_val_batches += 1
 
-        # average_spk = optimizer.report_avg_sunspike()
-        average_spk = None
 
         print(
             f"Epoch {epoch + 1}, lr: {optimizer.learning_rate}, "
