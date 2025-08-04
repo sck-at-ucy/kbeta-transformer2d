@@ -6,7 +6,6 @@ from __future__ import annotations
 import json
 import os
 import pickle
-from typing import Tuple
 
 from .utils import compare_dict_states, compare_list_states
 
@@ -16,7 +15,7 @@ __all__ = ["setup_save_directories", "setup_load_directories"]
 # ── copy‑paste exactly your two directory helpers ─────────────────────────
 def setup_save_directories(
     run_name: str, restart_epoch: int | None = None
-) -> Tuple[str, str, str, str]:
+) -> tuple[str, str, str, str]:
     import os
 
     script_dir = os.path.dirname(__file__)
@@ -37,7 +36,7 @@ def setup_save_directories(
     return save_dir_path, dataset_save_path, frameplots_path, inference_mse_path
 
 
-def setup_load_directories(run_name: str, checkpoint_epoch: int) -> Tuple[str, str]:
+def setup_load_directories(run_name: str, checkpoint_epoch: int) -> tuple[str, str]:
     import os
 
     script_dir = os.path.dirname(__file__)
