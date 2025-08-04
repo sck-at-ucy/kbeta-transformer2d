@@ -60,6 +60,10 @@ extend-select = [
 ignore = ["E501","UP035","N"]     # ignore long lines
 
 
+[tool.ruff.per-file-ignores]
+"src/kbeta_transformer2d/demo_heat2d.py" = ["UP045", "UP006"]
+
+
 [tool.setuptools.packages.find]
 where   = ["src"]
 include = ["kbeta_transformer2d*"]
