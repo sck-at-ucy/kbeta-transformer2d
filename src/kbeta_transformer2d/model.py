@@ -269,8 +269,9 @@ def physics_informed_loss_2D(model_output, src_alphas, src_dts, dx, dy):
         d2T_dx2[:, :-1, :, :] + d2T_dy2[:, :-1, :, :]
     )
 
-    residual_std = mx.sqrt(mx.var(residuals) + 1e-8)
-    normalized_residuals = residuals  # / residual_std
+    # If you later want to z‑score the residuals, re‑enable the next line:
+    # residual_std = mx.sqrt(mx.var(residuals) + 1e-8)
+    normalized_residuals = residuals
 
     pi_loss = nn.losses.mse_loss(
         normalized_residuals, mx.zeros_like(normalized_residuals), reduction="mean"

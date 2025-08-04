@@ -15,7 +15,6 @@ __all__ = [
     "initialize_geometry_and_bcs",
     "generate_datasets",
     "data_loader_2D",
-    "data_loader_2D_WITHOUT_PERMUTATION",
     "save_datasets",
     "load_datasets",
 ]
@@ -285,7 +284,6 @@ def generate_heat_data_2D(
 
 
 def place_segments_vectorized(T, side, start_positions, value, ny, nx):
-    num_samples = side.shape[0]
     arange_segment = np.arange(4)
 
     # Convert start_positions to MLX array

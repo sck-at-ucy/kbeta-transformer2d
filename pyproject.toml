@@ -55,10 +55,9 @@ extend-select = [
     "F",     # pyflakes
     "I",     # isort‑style import ordering
     "UP",    # modern typing etc.
-    "N"
+    #"N"
 ]
-
-ignore = ["E501"]     # example: ignore long lines
+ignore = ["E501","UP035","N"]     # ignore long lines
 
 
 [tool.setuptools.packages.find]

@@ -1,12 +1,11 @@
 # transformer/optim_factory.py
 """
-Return (model, optimizer, lr_schedule) according to YAML/CLI.
-Only Apple‑MLX tensors are used – *never* MXNet.
+Return (model, optimizer) according to YAML/CLI.
 """
 
 from __future__ import annotations
 
-from typing import Any, Dict, Tuple
+from typing import Any
 
 import mlx.core as mx
 import mlx.optimizers as optim
@@ -20,20 +19,22 @@ from .model import HeatDiffusionModel
 # ---------------------------------------------------------------------
 def _cosine_then_const(init: float, target: float, ramp_steps: int) -> optim.Schedule:
     """
-    Cosine decay for `ramp_steps`, constant afterwards – identical
-    to the schedule used in the 3‑D PINN reference.
+    Cosine‑decay from ``init`` → ``target`` for ``ramp_steps``,
+    then keep the LR flat at ``target``.
     """
-    cosine = optim.cosine_decay(init, decay_steps=ramp_steps, end=target)
-    const = lambda _: target
-    return optim.join_schedules([cosine, const], [ramp_steps])
+    cosine_part = optim.cosine_decay(init, decay_steps=ramp_steps, end=target)
+    def _constant(_: int) -> float:
+        return target
+    return optim.join_schedules([cosine_part, _constant], [ramp_steps])
 
 
 # ---------------------------------------------------------------------
 # 2) main public helper ------------------------------------------------
 # ---------------------------------------------------------------------
 def initialize_model_and_optimizer(
-    cfg: Dict[str, Any], nx: int, ny: int
-) -> Tuple[HeatDiffusionModel, optim.Optimizer]:
+    cfg: dict[str, Any], nx: int, ny: int
+) -> tuple[HeatDiffusionModel, optim.Optimizer]:
+
     p = cfg["model_params"]
 
     # ---------------- make the model ---------------------------------
@@ -87,7 +88,10 @@ def initialize_model_and_optimizer(
             param: ".".join(map(str, path))
             for path, param in tree_flatten(model.parameters())
         }
-        layer_key_fn = lambda p: param_to_path.get(p, "unknown")
+        
+        def layer_key_fn(param) -> str:
+            """Stable bucket for per‑layer statistics in Kourkoutas‑β."""
+            return param_to_path.get(param, "unknown")
 
         optimizer = KourkoutasSoftmaxFlex(
             learning_rate=1e-3,
