@@ -48,20 +48,18 @@ exclude = [
     "**/*.egg-info",
 ]
 
+[tool.ruff.lint]
 # Same rules as before …
 extend-select = [
     "E",     # pycodestyle
     "F",     # pyflakes
     "I",     # isort‑style import ordering
     "UP",    # modern typing etc.
+    "N"
 ]
+
 ignore = ["E501"]     # example: ignore long lines
 
-#[tool.ruff.lint]
-#ignore = [
-#  "E402",  # module‑level import not at top – benign in scripts
-#  "UP006", "UP035", "UP045",  # typing modernisation – nice to have
-#]
 
 [tool.setuptools.packages.find]
 where   = ["src"]
