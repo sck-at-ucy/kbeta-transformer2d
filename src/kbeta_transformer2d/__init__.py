@@ -1,8 +1,7 @@
-__version__ = "0.1.0"
 """2‑D Heat‑Diffusion Transformer demo for the Kourkoutas‑β paper."""
-from importlib.metadata import version as _v
 
-from .data import generate_datasets
-from .model import HeatDiffusionModel
+from .data  import generate_datasets          # noqa: F401,E402
+from .model import HeatDiffusionModel         # noqa: F401,E402
 
 __all__ = ["HeatDiffusionModel", "generate_datasets"]
+__version__ = "0.1.0"
