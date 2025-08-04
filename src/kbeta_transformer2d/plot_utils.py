@@ -429,7 +429,6 @@ def plot_regressive_predictions_2D(
     """
     Evaluate the model in a self-regressive manner and plot predictions.
     """
-    total_loss = 0
     num_batches = 0
     num_plots = 0
     t_trained = None
@@ -622,8 +621,7 @@ def plot_model_weights(model, epoch):
             weights_abs = mx.abs(weights)
             weights_abs_reshaped = weights_abs.reshape(26, 26, 512)
 
-            # Calculate min, mean, and max across the embedding dimension
-            min_data = mx.min(weights_abs_reshaped, axis=2)
+            # Calculate mean, and max across the embedding dimension
             mean_data = mx.mean(weights_abs_reshaped, axis=2)
             max_data = mx.max(weights_abs_reshaped, axis=2)
 
