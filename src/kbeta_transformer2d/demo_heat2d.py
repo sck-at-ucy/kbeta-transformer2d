@@ -1,6 +1,5 @@
-# transformer/Testing_Kourkoutasb.py
 """
-Testing_Kourkoutasb.py – refactored for modular CLI use
+demo_heat2d.py – refactored for modular CLI use
 -------------------------------------------------------
 
 • No top‑level side‑effects except for imports.
@@ -9,30 +8,27 @@ Testing_Kourkoutasb.py – refactored for modular CLI use
 • Former main‑block lives in run_from_config(cfg).
 • A thin main() keeps the file executable *and* importable.
 """
+# ruff: noqa: E402
 
+
+# --- standard libs ----------------------------------------------------------
 from __future__ import annotations
 
-import sys
-
-print(">>> entering Testing_Kourkoutasb_tmp, argv:", sys.argv)
-
-# ── standard lib ───────────────────────────────────────────────────────────
 import argparse
 import json
 import os
 import socket
-import sys
 from pathlib import Path
-
-# ── local project imports (leave unchanged) ───────────────────────────────
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
+# ---mlx and third‑party -----------------------------------------------------
 import mlx.core as mx
 import mlx.optimizers as optim
 import numpy as np
 import yaml
 
 if TYPE_CHECKING:             # only seen by static analyzers
+    from .model import HeatDiffusionModel
     model:  HeatDiffusionModel
     optimizer: optim.Optimizer
     train_step: object
@@ -208,7 +204,7 @@ from .utils import (
 # =========================================================================
 #  4) “run_from_config” Director
 # =========================================================================
-def run_from_config(cfg: Dict[str, Any]) -> None:
+def run_from_config(cfg: dict[str, Any]) -> None:
     global config, ARGS, model, optimizer, state, train_step, evaluate_step
     config = cfg
 
