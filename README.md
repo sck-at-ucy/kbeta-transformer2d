@@ -1,6 +1,12 @@
+[![CI (macOS arm64)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml)
+
+<p align="center">
+  <img src="assets/MLX_Kourkoutas.png" width="300"/>
+    <img src="assets/t_2dframes.png" width="300"/>
+</p>
+
 # kbeta‑transformer2d – *2‑D Heat‑Diffusion Transformer trained with Kourkoutas‑β*  🌞🦎🚀📈
 
-[![CI (macOS arm64)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml)
 
 > **Research companion code for the upcoming paper> “Kourkoutas‑β – Soft‑max Momentum with Adaptive Variance for Mesh‑Accelerated Deep Learning.”**> > This repository contains the full **2‑D data‑driven Transformer** workload that accompanies the optimiser > (see the separate [`kbeta`](https://github.com/sck-at-ucy/kbeta) repo), plus lightweight utilities for training, > evaluation and visualisation.
 
