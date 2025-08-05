@@ -1,5 +1,6 @@
 """
 demo_heat2d.py – refactored for modular CLI use
+Author: Stavros Kassinos, August 2025
 -------------------------------------------------------
 
 • No top‑level side‑effects except for imports.
@@ -19,7 +20,7 @@ import json
 import os
 import socket
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 # ---mlx and third‑party -----------------------------------------------------
 import mlx.core as mx
@@ -54,104 +55,121 @@ def _load_yaml(path: str | Path) -> Dict[str, Any]:
         return yaml.safe_load(fh)
 
 
-def _apply_overrides(cfg: Dict[str, Any], kv_pairs: List[str]) -> None:
-    """
-    Apply `KEY=VALUE` overrides given on the command line.
-    Nested keys use dot‑notation, e.g. ``--override model_params.embed_dim=256``.
-    """
-    for pair in kv_pairs:
-        if "=" not in pair:
-            raise ValueError(f"--override expects KEY=VAL, got {pair!r}")
-        key, val = pair.split("=", 1)
-        try:  # interpret numbers / lists / bools
-            val = json.loads(val)
-        except Exception:
-            pass
-        sub = cfg
-        for k in key.split(".")[:-1]:
-            sub = sub.setdefault(k, {})
-        sub[key.split(".")[-1]] = val
-
-
-# =========================================================================
-# 2) CLI compatible with the previous 3‑D PINN script
-# =========================================================================
+# --------------------------------------------------------------------------
+# 1) parse CLI  – all “overrides” end up in one flat list: args.override
+# --------------------------------------------------------------------------
 def _parse_cli() -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        prog="python -m transformer.Testing_Kourkoutasb",
-        description="2‑D heat‑diffusion Transformer (MX‑GPU)",
+        prog="python -m kbeta_transformer2d.demo_heat2d",
+        description="2‑D heat‑diffusion Transformer (Apple‑MLX)",
     )
-    p.add_argument(
-        "config", metavar="YAML", type=str, help="Path to YAML configuration file"
-    )
-    # ----- historical flags copied from the PINN code -------------------
-    p.add_argument(
-        "--optimizer",
-        choices=["adam95", "adam999", "kourkoutas"],
-        default=None,
-        help="Optimiser to use (overrides YAML)",
-    )
-    p.add_argument(
-        "--epochs",
-        type=int,
-        default=None,
-        help="Number of training epochs (overrides YAML)",
-    )
-    p.add_argument(
-        "--seed", type=int, default=None, help="Random seed (overrides YAML)"
-    )
-    p.add_argument(
-        "--viz", action="store_true", help="Run optional visualisation at the end"
-    )
-    p.add_argument(
-        "--kour_diagnostics",
-        action="store_true",
-        help="Enable lightweight diagnostics in KourkoutasSoftmaxFlex",
-    )
-    p.add_argument(
-        "--collect_spikes",
-        action="store_true",
-        help="Track sun‑spike / β₂ distributions during training",
-    )
-    # ----- generic KEY=VAL overrides ------------------------------------
+
+    # mandatory YAML path
+    p.add_argument("config", metavar="YAML", help="Path to YAML configuration file")
+
+    # convenience shorthands ------------------------------------------------
+    p.add_argument("--seed", type=int)
+    p.add_argument("--epochs", type=int)
+    p.add_argument("--optimizer", choices=["adam95", "adam999", "kourkoutas"])
+    p.add_argument("--kour_diagnostics", action="store_true")
+    p.add_argument("--collect_spikes", action="store_true")
+    p.add_argument("--viz", action="store_true")
+
+    # generic KEY=VAL overrides --------------------------------------------
     p.add_argument(
         "--override",
-        nargs="*",
+        action="extend",
+        nargs="+",
         default=[],
         metavar="KEY=VAL",
-        help="Override arbitrary YAML entries; dot‑notation allowed",
+        help="Arbitrary YAML overrides; dot‑notation allowed",
     )
-    return p.parse_args()
+
+    args = p.parse_args()
+
+    # ------------------------------------------------------------------
+    # ❶ push shorthand flags into args.override
+    # ------------------------------------------------------------------
+    def _as_json(v):
+        return json.dumps(v) if isinstance(v, bool) else str(v)
+
+    shorthand = {
+        "seed":             "seed",
+        "epochs":           "model_params.epochs",
+        "optimizer":        "optimizer.name",
+        "kour_diagnostics": "optimizer.kour_diagnostics",
+        "collect_spikes":   "tracking.collect_spikes",
+        "viz":              "viz.enabled",
+    }
+
+    for attr, dest in shorthand.items():
+        val = getattr(args, attr)
+        if val is None or (isinstance(val, bool) and not val):
+            continue
+        args.override.append(f"{dest}={_as_json(val)}")
+
+    # ------------------------------------------------------------------
+    # ❷ rewrite *aliases* that the user might have typed by hand
+    # ------------------------------------------------------------------
+    alias = {
+        "epochs":            "model_params.epochs",
+        "kour_diagnostics":  "optimizer.kour_diagnostics",
+        # add more aliases here if you like
+    }
+
+    fixed = []
+    for pair in args.override:
+        key, val = pair.split("=", 1)
+        key = alias.get(key, key)          # expand if alias known
+        fixed.append(f"{key}={val}")
+    args.override = fixed
+
+    return args
 
 
-def build_config() -> Dict[str, Any]:
+# --------------------------------------------------------------------------
+# 2) a *single* canonical routine that mutates the cfg in‑place
+# --------------------------------------------------------------------------
+def _apply_overrides(cfg: dict[str, Any], kv_strings: list[str]) -> None:
     """
-    Merge YAML file, legacy PINN‑style flags and ``--override`` KV pairs
-    into a single configuration dictionary.
+    Apply KEY=VAL overrides to a (possibly nested) dict *in place*.
+
+    Supports dot‑notation in keys and JSON‑decodable values.
     """
-    global ARGS
-    ARGS = _parse_cli()
+    for pair in kv_strings:
+        if "=" not in pair:
+            raise ValueError(f"--override expects KEY=VAL, got {pair!r}")
 
-    cfg = _load_yaml(ARGS.config)
+        key, raw_val = pair.split("=", 1)
+        try:                                    # try int/float/bool/list/…
+            val: Any = json.loads(raw_val)
+        except Exception:
+            val = raw_val                       # fall back to plain string
 
-    # ---- simple scalar overrides --------------------------------------
-    if ARGS.seed is not None:
-        cfg["seed"] = ARGS.seed
-    if ARGS.epochs is not None:
-        cfg["model_params"]["epochs"] = ARGS.epochs
-    if ARGS.optimizer is not None:
-        cfg.setdefault("optimizer", {})["name"] = ARGS.optimizer
+        target = cfg
+        *parents, leaf = key.split(".")
+        for part in parents:                    # descend / create as needed
+            target = target.setdefault(part, {})
+        target[leaf] = val
 
-    # ---- boolean feature‑toggles --------------------------------------
-    if ARGS.kour_diagnostics:
-        cfg.setdefault("optimizer", {})["kour_diagnostics"] = True
-    if ARGS.collect_spikes:
-        cfg.setdefault("tracking", {})["collect_spikes"] = True
-    if ARGS.viz:
-        cfg.setdefault("viz", {})["enabled"] = True
 
-    # ---- arbitrary KEY=VAL overrides ----------------------------------
-    _apply_overrides(cfg, ARGS.override)
+# --------------------------------------------------------------------------
+# 3) build the final configuration dict
+# --------------------------------------------------------------------------
+def build_config() -> dict[str, Any]:
+    """
+    YAML ▸ CLI overrides ▸ return merged dict.
+    Precedence: CLI > --override > YAML.
+    """
+    args = _parse_cli()                   # ① parse everything
+    cfg  = _load_yaml(args.config)        # ② base YAML
+    _apply_overrides(cfg, args.override)  # ③ mutate in‑place
+    
+    # ensure top‑level ‘seed’ or ‘epochs’ are mirrored where the code expects them
+    if "seed" in cfg:
+        cfg["seed"] = int(cfg["seed"])            # override may have made it str/float
+    if "epochs" in cfg:
+        cfg.setdefault("model_params", {})["epochs"] = int(cfg.pop("epochs"))
     return cfg
 
 
@@ -213,8 +231,9 @@ def run_from_config(cfg: dict[str, Any]) -> None:
     mx.random.seed(seed)
 
     hostname = socket.gethostname()
-    print("mx‑Random:", mx.random.state)
-    print("Random state:", mx.random.state)
+    print("mx.random  state:", mx.random.state)                # MLX
+    print("np.random  seed :", np.random.get_state()[1][0])    #type: ignore[index]
+
     print(
         f"Configuration: {config['boundary_segment_strategy']}:{config['model_params']['mask_type']}"
     )
@@ -257,14 +276,6 @@ def run_from_config(cfg: dict[str, Any]) -> None:
     hyper_base_file_name = f"config.json_BeyondL_{run_name}"
     optimizer_base_file_name = f"optimizer_state_BeyondL_{run_name}"
 
-    print(f"Random state: {mx.random.state}")
-    print(
-        f"Configuration: {config['boundary_segment_strategy']}:{config['model_params']['mask_type']}"
-    )
-
-    # Print environment variables for debugging
-    LIBUSED = os.environ.get("DYLD_LIBRARY_PATH")
-    print(f"Hostname: {hostname}: DYLD_LIBRARY_PATH:{LIBUSED}")
 
     if config[
         "start_from_scratch"
@@ -460,8 +471,8 @@ def run_from_config(cfg: dict[str, Any]) -> None:
         f"************************ Hostname: {hostname} Starting Training *********************** "
     )
 
-    sunspike_dict = {}  # global or outside the loop
-    betas2_dict = {}  # global or outside the loop
+    sunspike_dict: dict[int, list[float]] = {}   # outside the loop
+    betas2_dict:   dict[int, list[float]] = {}
     # Start or continue training
     train_and_validate(
         model,

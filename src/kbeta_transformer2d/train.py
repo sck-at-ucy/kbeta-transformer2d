@@ -172,7 +172,10 @@ def train_and_validate(
         )
 
         # inside the epoch loop AFTER validation
-        if hasattr(optimizer, "snapshot_diagnostics"):
+        if (
+            hasattr(optimizer, "snapshot_diagnostics")          # implemented
+            and getattr(optimizer, "_diag", False)        # counters enabled
+        ):
             # Kourkoutas – rich info available
             diags = optimizer.snapshot_diagnostics()
             print(

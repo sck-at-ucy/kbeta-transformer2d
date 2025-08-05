@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kbeta-transformer2d"
-version = "0.0.0a1"
+version = "0.0.0a3"
 description = "2‑D heat‑diffusion Transformer demo for the Kourkoutas‑β optimiser"
 authors = [{name = "Stavros Kassinos", email = "kassinos.stavros@ucy.ac.cy"}]
 readme = "README.md"
@@ -28,6 +28,9 @@ dev = [
     "black",
     "mypy",
     "build",
+    "pandas-stubs",
+    "types-seaborn",
+    "types-PyYAML",
     # local sibling package (ref uses main by default; dev‑branch not required)
     #"kbeta @ file:///Users/m2/PycharmProjects/kbeta",           # local path
     # If CI needs it from GitHub (private‑repo token handled in workflow):
@@ -60,7 +63,7 @@ extend-select = [
 ignore = ["E501","UP035","N"]     # ignore long lines
 
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "src/kbeta_transformer2d/demo_heat2d.py" = ["UP045", "UP006"]
 
 

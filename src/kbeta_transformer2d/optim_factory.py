@@ -5,19 +5,23 @@ Return (model, optimizer) according to YAML/CLI.
 
 from __future__ import annotations
 
-from typing import Any
+# ‑‑ stdlib -------------------------------------------------
+from typing import Any, Callable
 
+# ‑‑ third‑party -------------------------------------------
 import mlx.core as mx
 import mlx.optimizers as optim
 from kbeta.optim import KourkoutasSoftmaxFlex
 
+# ‑‑ local --------------------------------------------------
 from .model import HeatDiffusionModel
 
+Schedule = Callable[[mx.array], mx.array]
 
 # ---------------------------------------------------------------------
 # 1) tiny utility ------------------------------------------------------
 # ---------------------------------------------------------------------
-def _cosine_then_const(init: float, target: float, ramp_steps: int) -> optim.Schedule:
+def _cosine_then_const(init: float, target: float, ramp_steps: int) ->Schedule:
     """
     Cosine‑decay from ``init`` → ``target`` for ``ramp_steps``,
     then keep the LR flat at ``target``.
@@ -33,7 +37,7 @@ def _cosine_then_const(init: float, target: float, ramp_steps: int) -> optim.Sch
 # ---------------------------------------------------------------------
 def initialize_model_and_optimizer(
     cfg: dict[str, Any], nx: int, ny: int
-) -> tuple[HeatDiffusionModel, optim.Optimizer]:
+) -> tuple[HeatDiffusionModel, optim.Adam | KourkoutasSoftmaxFlex]:
 
     p = cfg["model_params"]
 
@@ -60,7 +64,8 @@ def initialize_model_and_optimizer(
     lr_schedule = _cosine_then_const(init_lr, target_lr, ramp_ep)
 
     # ---------------- pick optimiser --------------------------------
-    name = opt_cfg.get("name", "adam999").lower()
+    name: str = opt_cfg.get("name", "adam999").lower()
+    optimizer: optim.Adam | KourkoutasSoftmaxFlex
 
     if name == "adam95":
         optimizer = optim.Adam(
@@ -69,7 +74,9 @@ def initialize_model_and_optimizer(
             eps=1e-8,
             bias_correction=True,
         )
-        _pretty_print_adam("ADAM95", optimizer)
+        #_pretty_print_adam("ADAM95", optimizer)
+        #if isinstance(optimizer, KourkoutasSoftmaxFlex):
+        #    _pretty_print_kour(optimizer)
 
     elif name == "adam999":
         optimizer = optim.Adam(
@@ -78,7 +85,7 @@ def initialize_model_and_optimizer(
             eps=1e-8,
             bias_correction=True,
         )
-        _pretty_print_adam("ADAM999", optimizer)
+        #_pretty_print_adam("ADAM999", optimizer)
 
     elif name == "kourkoutas":
         # ------ optional layer‑key fn (stable path) ------------------
@@ -110,13 +117,20 @@ def initialize_model_and_optimizer(
             layer_key_fn=layer_key_fn,
             diagnostics=opt_cfg.get("kour_diagnostics", False),
         )
-        _pretty_print_kour(optimizer)
+        #_pretty_print_kour(optimizer)
+        #if isinstance(optimizer, KourkoutasSoftmaxFlex):
+        #    _pretty_print_kour(optimizer)
 
     else:
         raise ValueError(
             f"Unknown optimiser '{name}'. Valid: adam95 | adam999 | kourkoutas"
         )
 
+    if isinstance(optimizer, KourkoutasSoftmaxFlex):
+        _pretty_print_kour(optimizer)          # dedicated formatter
+    else:  # plain Adam
+        _pretty_print_adam(name.upper(), optimizer)   # reuse helper
+        
     optimizer.init(model.parameters())
     return model, optimizer
 
@@ -137,5 +151,6 @@ def _pretty_print_kour(opt: KourkoutasSoftmaxFlex) -> None:
         f"β1={opt.beta1} | β2_max={opt.beta2_max} | β2_min={opt.beta2_min} | "
         f"α={opt.alpha} | tiny={opt.tiny_spike:.1e}/{opt.tiny_denom:.1e} | "
         f"adaptTiny={opt.adaptive_tiny} | decay={opt.decay or 'off'} | "
-        f"maxR={opt.max_ratio or 'off'} | eps={opt.eps:.2e}"
+        f"maxR={opt.max_ratio or 'off'} | eps={opt.eps:.2e} | "
+        f"diagnostics={opt._diag}"
     )
