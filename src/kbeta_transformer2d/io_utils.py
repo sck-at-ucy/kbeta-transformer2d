@@ -115,7 +115,7 @@ def save_model_and_optimizer(
     # --- write ----------------------------------------------------------------
     with model_file.open("wb") as fh:
         pickle.dump(model.parameters(), fh)
-    model.save_weights(weights_file)
+    model.save_weights(str(weights_file_path))
 
     with optimizer_file.open("wb") as fh:
         pickle.dump(optimizer.state, fh)
