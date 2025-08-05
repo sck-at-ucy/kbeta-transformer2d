@@ -85,7 +85,7 @@ optimizer:
   tiny_spike: 1.e-8
   tiny_denom: 1.e-8
   decay: None
-  adaptive_tiny: False
+  adaptive_tiny: false
   max_ratio: None
   warmup_steps: 350
   bias_correction: "beta2max"
