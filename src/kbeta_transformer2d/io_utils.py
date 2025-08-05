@@ -1,273 +1,184 @@
-# transformer/io_utils.py
-"""Generic path helpers – no ML logic."""
+# kbeta_transformer2d/io_utils.py
+"""Filesystem helpers – zero ML logic, pure I/O utilities."""
 
 from __future__ import annotations
 
 import json
-import os
 import pickle
+from pathlib import Path
+from typing import Any, Tuple
 
 from .utils import compare_dict_states, compare_list_states
 
-__all__ = ["setup_save_directories", "setup_load_directories"]
+__all__ = [
+    "setup_save_directories",
+    "setup_load_directories",
+    "save_model_and_optimizer",
+    "load_model_and_optimizer",
+]
+
+# ---------------------------------------------------------------------------
+# 1) directory helpers
+# ---------------------------------------------------------------------------
+def _ensure_dir(p: Path) -> Path:
+    """Create *p* (and parents) if it does not yet exist, then return *p*."""
+    p.mkdir(parents=True, exist_ok=True)
+    return p
 
 
-# ── copy‑paste exactly your two directory helpers ─────────────────────────
+def _root(out_root: str | Path | None = None) -> Path:
+    """
+    Resolve the root folder used for *all* artefacts.
+
+    Priority  1. explicit ``out_root`` argument  
+              2. ``$KTRANS_OUT`` env‑var (handy for cluster jobs)  
+              3. current working directory.
+    """
+    if out_root is not None:
+        return Path(out_root).expanduser().resolve()
+    from os import getenv
+
+    return Path(getenv("KTRANS_OUT", Path.cwd())).expanduser().resolve()
+
+
+# main public helpers -------------------------------------------------------
 def setup_save_directories(
-    run_name: str, restart_epoch: int | None = None
-) -> tuple[str, str, str, str]:
-    import os
+    run_name: str,
+    restart_epoch: int | None = None,
+    *,
+    out_root: str | Path | None = None,
+) -> Tuple[Path, Path, Path, Path]:
+    """
+    Create/return four folders:
 
-    script_dir = os.path.dirname(__file__)
-    output_dir = os.path.join(script_dir, "OUTPUTS")
-    os.makedirs(output_dir, exist_ok=True)
+    * model checkpoints
+    * saved NPZ datasets
+    * individual frame plots
+    * per‑timestep inference MSE
 
+    They all live under ``<root>/OUTPUTS`` where *root* defaults to CWD.
+    """
     if restart_epoch is not None:
         run_name = f"{run_name}_restart_epoch_{restart_epoch}"
 
-    save_dir_path = os.path.join(output_dir, f"Transformer_save_BeyondL_{run_name}")
-    dataset_save_path = os.path.join(output_dir, f"Datasets_save_BeyondL_{run_name}")
-    frameplots_path = os.path.join(output_dir, f"Heatmaps_BeyondL_{run_name}")
-    inference_mse_path = os.path.join(output_dir, f"InferenceMSE_BeyondL_{run_name}")
+    base = _ensure_dir(_root(out_root) / "OUTPUTS")
+    save_dir      = _ensure_dir(base / f"Transformer_save_BeyondL_{run_name}")
+    dataset_dir   = _ensure_dir(base / f"Datasets_save_BeyondL_{run_name}")
+    frameplot_dir = _ensure_dir(base / f"Heatmaps_BeyondL_{run_name}")
+    mse_dir       = _ensure_dir(base / f"InferenceMSE_BeyondL_{run_name}")
 
-    for p in (save_dir_path, dataset_save_path, frameplots_path, inference_mse_path):
-        os.makedirs(p, exist_ok=True)
-
-    return save_dir_path, dataset_save_path, frameplots_path, inference_mse_path
+    return save_dir, dataset_dir, frameplot_dir, mse_dir
 
 
-def setup_load_directories(run_name: str, checkpoint_epoch: int) -> tuple[str, str]:
-    import os
+def setup_load_directories(
+    run_name: str,
+    checkpoint_epoch: int,
+    *,
+    out_root: str | Path | None = None,
+) -> Tuple[Path, Path]:
+    """Locate the two folders created by :pyfunc:`setup_save_directories`."""
+    base = _root(out_root) / "OUTPUTS"
+    load_dir    = base / f"Transformer_save_BeyondL_{run_name}"
+    dataset_dir = base / f"Datasets_save_BeyondL_{run_name}"
 
-    script_dir = os.path.dirname(__file__)
-    output_dir = os.path.join(script_dir, "OUTPUTS")
-
-    load_dir_path = os.path.join(output_dir, f"Transformer_save_BeyondL_{run_name}")
-    dataset_load_path = os.path.join(output_dir, f"Datasets_save_BeyondL_{run_name}")
-
-    if not os.path.exists(load_dir_path):
-        raise FileNotFoundError(f"Checkpoint directory {load_dir_path} does not exist!")
-    if not os.path.exists(dataset_load_path):
-        raise FileNotFoundError(
-            f"Dataset directory {dataset_load_path} does not exist!"
-        )
-
-    return load_dir_path, dataset_load_path
+    for p in (load_dir, dataset_dir):
+        if not p.is_dir():
+            raise FileNotFoundError(
+                f"{p} does not exist – did you specify the correct run‑name?"
+            )
+    return load_dir, dataset_dir
 
 
-# Function to save model and optimizer state periodically
+# ---------------------------------------------------------------------------
+# 2) (de)serialization helpers
+# ---------------------------------------------------------------------------
 def save_model_and_optimizer(
-    model,
-    optimizer,
-    mx_random_state,
-    config,
-    current_epoch,
-    dir_path,
-    model_base_file_name,
-    optimizer_base_file_name,
-    hyper_base_file_name,
-):
-    """
-    Saves the model's state, weights, optimizer state, random state, and configuration at the specified epoch.
+    model: Any,
+    optimizer: Any,
+    mx_random_state: Any,
+    config: dict[str, Any],
+    current_epoch: int,
+    dir_path: Path,
+    model_base_file_name: str,
+    optimizer_base_file_name: str,
+    hyper_base_file_name: str,
+) -> None:
+    """Persist weights, optimiser state, RNG & hyper‑params for *current_epoch*."""
+    dir_path = _ensure_dir(Path(dir_path))
 
-    This function saves the current state of the model, including its weights, the optimizer's state,
-    the random state, and the training configuration to files. These files can be used to resume
-    training or perform model evaluation at a later point.
+    model_file      = dir_path / f"{model_base_file_name}_epoch_{current_epoch}.pkl"
+    weights_file    = dir_path / f"{model_base_file_name}_weights_epoch_{current_epoch}.safetensors"
+    optimizer_file  = dir_path / f"{optimizer_base_file_name}_epoch_{current_epoch}.pkl"
+    random_file     = dir_path / f"random_state_epoch_{current_epoch}.pkl"
+    config_file     = dir_path / f"{hyper_base_file_name}_epoch_{current_epoch}.json"
 
-    Parameters
-    ----------
-    config : dict
-        The training configuration, including parameters like batch size, learning rate, and model architecture.
-    current_epoch : int
-        The current epoch number, used to save the model and optimizer states with the corresponding epoch suffix.
-    dir_path : str
-        The directory where the model, optimizer, random state, and configuration files will be saved.
-    model_base_file_name : str
-        The base name for the model file (the epoch number will be appended).
-    optimizer_base_file_name : str
-        The base name for the optimizer file (the epoch number will be appended).
-    hyper_base_file_name : str
-        The base name for the configuration (hyperparameters) file (the epoch number will be appended).
+    # --- write ----------------------------------------------------------------
+    with model_file.open("wb") as fh:
+        pickle.dump(model.parameters(), fh)
+    model.save_weights(weights_file)
 
-    Returns
-    -------
-    None
-        The function saves the model's state, optimizer state, random state, and configuration to files in the specified directory.
-    """
-    # Ensure the directory exists, create it if not
-    if not os.path.exists(dir_path):
-        os.makedirs(dir_path)
+    with optimizer_file.open("wb") as fh:
+        pickle.dump(optimizer.state, fh)
 
-    model_file_name = f"{model_base_file_name}_epoch_{current_epoch}.pkl"
-    weights_file_name = (
-        f"{model_base_file_name}_weights_epoch_{current_epoch}.safetensors"
-    )
-    # optimizer_file_name = f"{optimizer_base_file_name}_epoch_{current_epoch}.safetensors"
-    optimizer_file_name = f"{optimizer_base_file_name}_epoch_{current_epoch}.pkl"
-    random_state_file_name = f"random_state_epoch_{current_epoch}.pkl"
-    config_file_name = f"{hyper_base_file_name}_epoch_{current_epoch}.json"
+    with random_file.open("wb") as fh:
+        pickle.dump(mx_random_state, fh)
 
-    # Save model state (parameters only)
-    model_file_path = os.path.join(dir_path, model_file_name)
-    with open(model_file_path, "wb") as f:
-        pickle.dump(model.parameters(), f)
-        # pickle.dump(model.state, f)
+    cfg = dict(config, current_epoch=current_epoch)
+    config_file.write_text(json.dumps(cfg, indent=4))
 
-    # Save model weights
-    weights_file_path = os.path.join(dir_path, weights_file_name)
-    model.save_weights(weights_file_path)
-
-    # Save optimizer state
-    optimizer_file_path = os.path.join(dir_path, optimizer_file_name)
-    with open(optimizer_file_path, "wb") as f:
-        pickle.dump(optimizer.state, f)
-
-    # Save random state
-    random_state_path = os.path.join(dir_path, random_state_file_name)
-    with open(random_state_path, "wb") as f:
-        pickle.dump(mx_random_state, f)
-
-    # Save training configuration
-    config["current_epoch"] = current_epoch
-    hyper_file_path = os.path.join(dir_path, config_file_name)
-    with open(hyper_file_path, "w") as json_file:
-        json.dump(config, json_file, indent=4)
-
-    print(
-        f"Model, optimizer, random state, and configuration saved at epoch {current_epoch}."
-    )
+    print(f"✅ Saved checkpoint #{current_epoch} to {dir_path.relative_to(_root())}")
 
 
 def load_model_and_optimizer(
-    model,
-    optimizer,
-    mx_random_state,
-    dir_path,
-    model_base_file_name,
-    optimizer_base_file_name,
-    hyper_base_file_name,
-    checkpoint_epoch,
-    comparison=True,
-):
-    """
-    Loads the model state, optimizer state, random state, and configuration from a specific checkpoint.
+    model: Any,
+    optimizer: Any,
+    mx_random_state: Any,
+    dir_path: Path,
+    model_base_file_name: str,
+    optimizer_base_file_name: str,
+    hyper_base_file_name: str,
+    checkpoint_epoch: int,
+    *,
+    comparison: bool = True,
+) -> Tuple[int, dict[str, Any], Any, dict[str, Any], dict[str, Any]]:
+    """Inverse of :pyfunc:`save_model_and_optimizer` (see docstring there)."""
+    dir_path = Path(dir_path)
 
-    This function loads the saved model parameters, optimizer state, random state, and training configuration
-    from a specified epoch. It checks for the existence of the saved files and compares the current states with
-    the loaded ones to ensure consistency. If no checkpoint is found, the training starts from scratch.
+    model_file     = dir_path / f"{model_base_file_name}_epoch_{checkpoint_epoch}.pkl"
+    weights_file   = dir_path / f"{model_base_file_name}_weights_epoch_{checkpoint_epoch}.safetensors"
+    optimizer_file = dir_path / f"{optimizer_base_file_name}_epoch_{checkpoint_epoch}.pkl"
+    random_file    = dir_path / f"random_state_epoch_{checkpoint_epoch}.pkl"
+    config_file    = dir_path / f"{hyper_base_file_name}_epoch_{checkpoint_epoch}.json"
 
-    Parameters
-    ----------
-    model : object
-        The model instance whose state (parameters and weights) will be loaded.
-    optimizer : object
-        The optimizer instance whose state will be loaded.
-    dir_path : str
-        The directory where the model, optimizer, random state, and configuration files are saved.
-    model_base_file_name : str
-        The base file name used for saving the model (with epoch appended).
-    optimizer_base_file_name : str
-        The base file name used for saving the optimizer (with epoch appended).
-    hyper_base_file_name : str
-        The base file name used for saving the configuration (with epoch appended).
-    checkpoint_epoch : int
-        The epoch number from which to load the model, optimizer, random state, and configuration.
-
-    Returns
-    -------
-    tuple
-        A tuple containing:
-        - start_epoch : int
-            The epoch from which to resume training. If no checkpoint is found, this is set to 0.
-        - loaded_optimizer_state : dict
-            The loaded optimizer state.
-        - loaded_random_state : object
-            The loaded random state for reproducibility.
-        - loaded_parameters : dict
-            The loaded model parameters.
-        - loaded_config: dict
-            The loaded configration
-    """
-    # Construct the file paths for model, optimizer, random state, and configuration
-    model_file_name = f"{model_base_file_name}_epoch_{checkpoint_epoch}.pkl"
-    weights_file_name = (
-        f"{model_base_file_name}_weights_epoch_{checkpoint_epoch}.safetensors"
-    )
-    optimizer_file_name = f"{optimizer_base_file_name}_epoch_{checkpoint_epoch}.pkl"
-    random_state_file_name = f"random_state_epoch_{checkpoint_epoch}.pkl"
-    config_file_name = f"{hyper_base_file_name}_epoch_{checkpoint_epoch}.json"
-
-    model_file_path = os.path.join(dir_path, model_file_name)
-    weights_file_path = os.path.join(dir_path, weights_file_name)
-    optimizer_file_path = os.path.join(dir_path, optimizer_file_name)
-    random_state_file_path = os.path.join(dir_path, random_state_file_name)
-    config_file_path = os.path.join(dir_path, config_file_name)
-
-    # Check if all necessary files exist for loading
-    if (
-        os.path.exists(model_file_path)
-        and os.path.exists(optimizer_file_path)
-        and os.path.exists(random_state_file_path)
-        and os.path.exists(config_file_path)
-        and os.path.exists(weights_file_path)
-    ):
-        # Load model state (parameters only)
-        with open(model_file_path, "rb") as f:
-            loaded_parameters = pickle.load(f)
-
-        # Load optimizer state
-        with open(optimizer_file_path, "rb") as f:
-            loaded_optimizer_state = pickle.load(f)
-
-        # Load random state
-        with open(random_state_file_path, "rb") as f:
-            loaded_random_state = pickle.load(f)
-
-        # Load training configuration
-        with open(config_file_path) as json_file:
-            loaded_config = json.load(json_file)
-            # config = loaded_config
-
-        # Get the start epoch from the configuration
-        start_epoch = loaded_config.get("current_epoch", 0)
-
-        # Load current states to compare with the loaded states
-        current_optimizer_state = optimizer.state
-        current_random_state = mx_random_state
-        current_model_parameters = model.parameters()
-
-        # Compare the states for consistency (useful when live saving-and_reloading during training for debugging)
-        if comparison:
-            if compare_dict_states(
-                current_optimizer_state, loaded_optimizer_state, "optimizer state"
-            ):
-                print("Optimizer state matches.")
-            else:
-                print("Optimizer state mismatch detected.")
-
-            if compare_list_states(
-                current_random_state, loaded_random_state, "random state"
-            ):
-                print("Random state matches.")
-            else:
-                print("Random state mismatch detected.")
-
-            if compare_dict_states(
-                current_model_parameters, loaded_parameters, "model state"
-            ):
-                print("Model state matches.")
-            else:
-                print("Model state mismatch detected.")
-
-            print(
-                f"Model, optimizer, random state, and configuration loaded from {dir_path} at epoch {checkpoint_epoch}."
-            )
-    else:
-        # If no checkpoint is found, start from scratch
-        start_epoch = 0
-        print(
-            f"No saved model found at epoch {checkpoint_epoch}. Starting training from scratch."
+    # --- existence check ------------------------------------------------------
+    mandatory = [model_file, optimizer_file, random_file, config_file, weights_file]
+    if not all(f.exists() for f in mandatory):
+        raise FileNotFoundError(
+            "⛔ Some checkpoint artefacts are missing:\n"
+            + "\n".join(str(p) for p in mandatory if not p.exists())
         )
+
+    # --- load -----------------------------------------------------------------
+    with model_file.open("rb") as fh:
+        loaded_parameters = pickle.load(fh)
+
+    with optimizer_file.open("rb") as fh:
+        loaded_optimizer_state = pickle.load(fh)
+
+    with random_file.open("rb") as fh:
+        loaded_random_state = pickle.load(fh)
+
+    loaded_config: dict[str, Any] = json.loads(config_file.read_text())
+    start_epoch = int(loaded_config.get("current_epoch", 0))
+
+    # --- optional consistency checks -----------------------------------------
+    if comparison:
+        if compare_dict_states(optimizer.state, loaded_optimizer_state, "optimizer"):
+            print("✅ Optimizer state matches stored checkpoint.")
+        if compare_list_states(mx_random_state, loaded_random_state, "random"):
+            print("✅ Random state matches stored checkpoint.")
+        if compare_dict_states(model.parameters(), loaded_parameters, "model"):
+            print("✅ Model parameters match stored checkpoint.")
 
     return (
         start_epoch,
