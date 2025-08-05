@@ -20,6 +20,7 @@ import argparse
 import json
 import os
 import socket
+from importlib import resources
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
@@ -49,11 +50,34 @@ config: Optional[Dict[str, Any]] = None  # unified YAML + CLI configuration
 # =========================================================================
 # 1) YAML helpers
 # =========================================================================
-def _load_yaml(path: str | Path) -> Dict[str, Any]:
-    path = Path(path).expanduser()
-    if not path.is_file():
-        raise FileNotFoundError(path)
-    with path.open("r") as fh:
+_CONFIG_PACKAGE = "kbeta_transformer2d.configs"
+
+
+def _resolve_config(arg: str | Path) -> Path:
+    """
+    • If *arg* is an existing file path → return it unchanged.
+    • Otherwise treat *arg* as the *stem* of a config that lives in
+      kbeta_transformer2d/configs/ (with “.yml” appended).
+    """
+    p = Path(arg).expanduser()
+    if p.is_file():
+        return p  # user gave a real path
+
+    candidate = f"{arg}.yml" if not str(arg).endswith(".yml") else arg
+    try:
+        with resources.as_file(resources.files(_CONFIG_PACKAGE) / candidate) as fp:
+            return fp  # ← path inside site‑packages
+    except FileNotFoundError:
+        raise FileNotFoundError(
+            f"Cannot find config {arg!r}. "
+            f"Either give an existing file path or one of the "
+            f"built‑in presets in {_CONFIG_PACKAGE}."
+        ) from None
+
+
+def _load_yaml(path: str | Path) -> dict[str, Any]:
+    path = _resolve_config(path)  # ← look‑up happens here
+    with path.open("r", encoding="utf‑8") as fh:  # ← explicit encoding
         return yaml.safe_load(fh)
 
 

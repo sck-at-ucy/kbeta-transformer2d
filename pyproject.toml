@@ -72,5 +72,6 @@ where   = ["src"]
 include = ["kbeta_transformer2d*"]
 
 # pyproject.toml  (kbeta‑transformer2d)
+#
 [tool.setuptools.package-data]
 "kbeta_transformer2d" = ["configs/*.yml", "py.typed"]
