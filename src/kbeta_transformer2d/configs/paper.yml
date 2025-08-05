@@ -84,9 +84,9 @@ optimizer:
   eps: 1.0e-8
   tiny_spike: 1.0e-8
   tiny_denom: 1.0e-8
-  decay: none
+  decay: null
   adaptive_tiny: false
-  max_ratio: none
+  max_ratio: null
   warmup_steps: 350
   bias_correction: "beta2max"
 #  layer_key_fn: my_layer_key_fn
