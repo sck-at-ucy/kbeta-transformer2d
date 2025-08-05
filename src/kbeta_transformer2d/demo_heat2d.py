@@ -9,6 +9,7 @@ Author: Stavros Kassinos, August 2025
 • Former main‑block lives in run_from_config(cfg).
 • A thin main() keeps the file executable *and* importable.
 """
+
 # ruff: noqa: E402
 
 
@@ -28,9 +29,10 @@ import mlx.optimizers as optim
 import numpy as np
 import yaml
 
-if TYPE_CHECKING:             # only seen by static analyzers
+if TYPE_CHECKING:  # only seen by static analyzers
     from .model import HeatDiffusionModel
-    model:  HeatDiffusionModel
+
+    model: HeatDiffusionModel
     optimizer: optim.Optimizer
     train_step: object
     evaluate_step: object
@@ -94,12 +96,12 @@ def _parse_cli() -> argparse.Namespace:
         return json.dumps(v) if isinstance(v, bool) else str(v)
 
     shorthand = {
-        "seed":             "seed",
-        "epochs":           "model_params.epochs",
-        "optimizer":        "optimizer.name",
+        "seed": "seed",
+        "epochs": "model_params.epochs",
+        "optimizer": "optimizer.name",
         "kour_diagnostics": "optimizer.kour_diagnostics",
-        "collect_spikes":   "tracking.collect_spikes",
-        "viz":              "viz.enabled",
+        "collect_spikes": "tracking.collect_spikes",
+        "viz": "viz.enabled",
     }
 
     for attr, dest in shorthand.items():
@@ -112,15 +114,15 @@ def _parse_cli() -> argparse.Namespace:
     # ❷ rewrite *aliases* that the user might have typed by hand
     # ------------------------------------------------------------------
     alias = {
-        "epochs":            "model_params.epochs",
-        "kour_diagnostics":  "optimizer.kour_diagnostics",
+        "epochs": "model_params.epochs",
+        "kour_diagnostics": "optimizer.kour_diagnostics",
         # add more aliases here if you like
     }
 
     fixed = []
     for pair in args.override:
         key, val = pair.split("=", 1)
-        key = alias.get(key, key)          # expand if alias known
+        key = alias.get(key, key)  # expand if alias known
         fixed.append(f"{key}={val}")
     args.override = fixed
 
@@ -141,14 +143,14 @@ def _apply_overrides(cfg: dict[str, Any], kv_strings: list[str]) -> None:
             raise ValueError(f"--override expects KEY=VAL, got {pair!r}")
 
         key, raw_val = pair.split("=", 1)
-        try:                                    # try int/float/bool/list/…
+        try:  # try int/float/bool/list/…
             val: Any = json.loads(raw_val)
         except Exception:
-            val = raw_val                       # fall back to plain string
+            val = raw_val  # fall back to plain string
 
         target = cfg
         *parents, leaf = key.split(".")
-        for part in parents:                    # descend / create as needed
+        for part in parents:  # descend / create as needed
             target = target.setdefault(part, {})
         target[leaf] = val
 
@@ -161,13 +163,13 @@ def build_config() -> dict[str, Any]:
     YAML ▸ CLI overrides ▸ return merged dict.
     Precedence: CLI > --override > YAML.
     """
-    args = _parse_cli()                   # ① parse everything
-    cfg  = _load_yaml(args.config)        # ② base YAML
+    args = _parse_cli()  # ① parse everything
+    cfg = _load_yaml(args.config)  # ② base YAML
     _apply_overrides(cfg, args.override)  # ③ mutate in‑place
-    
+
     # ensure top‑level ‘seed’ or ‘epochs’ are mirrored where the code expects them
     if "seed" in cfg:
-        cfg["seed"] = int(cfg["seed"])            # override may have made it str/float
+        cfg["seed"] = int(cfg["seed"])  # override may have made it str/float
     if "epochs" in cfg:
         cfg.setdefault("model_params", {})["epochs"] = int(cfg.pop("epochs"))
     return cfg
@@ -231,8 +233,8 @@ def run_from_config(cfg: dict[str, Any]) -> None:
     mx.random.seed(seed)
 
     hostname = socket.gethostname()
-    print("mx.random  state:", mx.random.state)                # MLX
-    print("np.random  seed :", np.random.get_state()[1][0])    #type: ignore[index]
+    print("mx.random  state:", mx.random.state)  # MLX
+    print("np.random  seed :", np.random.get_state()[1][0])  # type: ignore[index]
 
     print(
         f"Configuration: {config['boundary_segment_strategy']}:{config['model_params']['mask_type']}"
@@ -275,7 +277,6 @@ def run_from_config(cfg: dict[str, Any]) -> None:
     model_base_file_name = f"heat_diffusion_2D_model_BeyondL_{run_name}"
     hyper_base_file_name = f"config.json_BeyondL_{run_name}"
     optimizer_base_file_name = f"optimizer_state_BeyondL_{run_name}"
-
 
     if config[
         "start_from_scratch"
@@ -471,8 +472,8 @@ def run_from_config(cfg: dict[str, Any]) -> None:
         f"************************ Hostname: {hostname} Starting Training *********************** "
     )
 
-    sunspike_dict: dict[int, list[float]] = {}   # outside the loop
-    betas2_dict:   dict[int, list[float]] = {}
+    sunspike_dict: dict[int, list[float]] = {}  # outside the loop
+    betas2_dict: dict[int, list[float]] = {}
     # Start or continue training
     train_and_validate(
         model,

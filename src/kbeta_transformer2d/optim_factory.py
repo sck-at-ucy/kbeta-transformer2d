@@ -18,17 +18,20 @@ from .model import HeatDiffusionModel
 
 Schedule = Callable[[mx.array], mx.array]
 
+
 # ---------------------------------------------------------------------
 # 1) tiny utility ------------------------------------------------------
 # ---------------------------------------------------------------------
-def _cosine_then_const(init: float, target: float, ramp_steps: int) ->Schedule:
+def _cosine_then_const(init: float, target: float, ramp_steps: int) -> Schedule:
     """
     Cosine‑decay from ``init`` → ``target`` for ``ramp_steps``,
     then keep the LR flat at ``target``.
     """
     cosine_part = optim.cosine_decay(init, decay_steps=ramp_steps, end=target)
+
     def _constant(_: int) -> float:
         return target
+
     return optim.join_schedules([cosine_part, _constant], [ramp_steps])
 
 
@@ -74,9 +77,6 @@ def initialize_model_and_optimizer(
             eps=1e-8,
             bias_correction=True,
         )
-        #_pretty_print_adam("ADAM95", optimizer)
-        #if isinstance(optimizer, KourkoutasSoftmaxFlex):
-        #    _pretty_print_kour(optimizer)
 
     elif name == "adam999":
         optimizer = optim.Adam(
@@ -85,7 +85,7 @@ def initialize_model_and_optimizer(
             eps=1e-8,
             bias_correction=True,
         )
-        #_pretty_print_adam("ADAM999", optimizer)
+        # _pretty_print_adam("ADAM999", optimizer)
 
     elif name == "kourkoutas":
         # ------ optional layer‑key fn (stable path) ------------------
@@ -95,7 +95,7 @@ def initialize_model_and_optimizer(
             param: ".".join(map(str, path))
             for path, param in tree_flatten(model.parameters())
         }
-        
+
         def layer_key_fn(param) -> str:
             """Stable bucket for per‑layer statistics in Kourkoutas‑β."""
             return param_to_path.get(param, "unknown")
@@ -117,9 +117,6 @@ def initialize_model_and_optimizer(
             layer_key_fn=layer_key_fn,
             diagnostics=opt_cfg.get("kour_diagnostics", False),
         )
-        #_pretty_print_kour(optimizer)
-        #if isinstance(optimizer, KourkoutasSoftmaxFlex):
-        #    _pretty_print_kour(optimizer)
 
     else:
         raise ValueError(
@@ -127,10 +124,10 @@ def initialize_model_and_optimizer(
         )
 
     if isinstance(optimizer, KourkoutasSoftmaxFlex):
-        _pretty_print_kour(optimizer)          # dedicated formatter
+        _pretty_print_kour(optimizer)  # dedicated formatter
     else:  # plain Adam
-        _pretty_print_adam(name.upper(), optimizer)   # reuse helper
-        
+        _pretty_print_adam(name.upper(), optimizer)  # reuse helper
+
     optimizer.init(model.parameters())
     return model, optimizer
 

@@ -328,8 +328,6 @@ def save_distribution_density_heatmap(
     print(f"Density heatmap saved to {outfile}")
 
 
-
-
 def plot_predictions_2D(
     model,
     data_loader_func,

@@ -163,7 +163,6 @@ def train_and_validate(
             total_val_loss += val_loss.item()
             num_val_batches += 1
 
-
         print(
             f"Epoch {epoch + 1}, lr: {optimizer.learning_rate}, "
             f"Training Loss: {total_train_loss / num_train_batches}, "
@@ -172,10 +171,9 @@ def train_and_validate(
         )
 
         # inside the epoch loop AFTER validation
-        if (
-            hasattr(optimizer, "snapshot_diagnostics")          # implemented
-            and getattr(optimizer, "_diag", False)        # counters enabled
-        ):
+        if hasattr(optimizer, "snapshot_diagnostics") and getattr(  # implemented
+            optimizer, "_diag", False
+        ):  # counters enabled
             # Kourkoutas – rich info available
             diags = optimizer.snapshot_diagnostics()
             print(
@@ -351,9 +349,9 @@ def evaluate_self_regressive_model_BeyondL(
             time_step_mse[t - n_initial] = (
                 mse_loss.item()
             )  # Store MSE for the current batch
-            cumulative_mse[t - n_initial] += (
-                mse_loss.item()
-            )  # Accumulate MSE for this time step
+            cumulative_mse[
+                t - n_initial
+            ] += mse_loss.item()  # Accumulate MSE for this time step
 
         num_batches += 1
         print(f"finished batch: {num_batches}")
@@ -427,9 +425,9 @@ def evaluate_model_block_sequence(
             time_step_mse[t - n_initial] = (
                 mse_loss.item()
             )  # Store MSE for the current batch
-            cumulative_mse[t - n_initial] += (
-                mse_loss.item()
-            )  # Accumulate MSE for this time step
+            cumulative_mse[
+                t - n_initial
+            ] += mse_loss.item()  # Accumulate MSE for this time step
 
         num_batches += 1
 
