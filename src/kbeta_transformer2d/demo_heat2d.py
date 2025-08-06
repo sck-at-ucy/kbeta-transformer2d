@@ -366,6 +366,15 @@ def run_from_config(cfg: dict[str, Any]) -> None:
         start_epoch = 0
         if cfg.get("configuration_dump", False):
             print_fresh_run_config(cfg)
+            
+    # ── choose the save interval based on save_checkpoints ──────────────
+    if config.get("save_checkpoints", True):
+        # honour user‑provided value or fall back to 10
+        config["save_interval"] = int(config.get("save_interval", 10))
+    else:
+        # ‼️ *None* marks “do not checkpoint during training”
+        config["save_interval"] = None
+            
 
     # ---------------------------------------------------------------------
     # ⑤ compile train / eval closures

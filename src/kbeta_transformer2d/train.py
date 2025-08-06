@@ -62,7 +62,7 @@ def train_and_validate(
     batch_size,
     epochs,
     start_epoch,
-    save_interval,
+    save_interval: int | None,
     save_dir_path,  # ← new
     model_base_file_name,  # ← new
     optimizer_base_file_name,  # ← new
@@ -190,7 +190,7 @@ def train_and_validate(
         #    f"train={total_train_loss/num_train_batches:.3e} | "
         #    f"val={total_val_loss/num_val_batches:.3e}")
 
-        if (epoch + 1) % save_interval == 0:
+        if save_interval and (epoch + 1) % save_interval == 0:
             mx.eval(model.parameters(), optimizer.state)
             model.eval()
             save_model_and_optimizer(
