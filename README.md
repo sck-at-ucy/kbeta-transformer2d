@@ -111,7 +111,7 @@ python -m kbeta_transformer2d.demo_heat2d <CONFIG.yml> [flags]
 | `--optimizer NAME`      | `adam95` \| `adam999` \| `kourkoutas`                                                                                       |
 | `--kour_diagnostics`    | turn on verbose internal stats in **Kourkoutas‑β** (maps to `optimizer.kour_diagnostics=true`)                              |
 | `--collect_spikes`      | enable collection of per‑layer **Sun‑spike** / **β₂** stats during training (maps to `tracking.collect_spikes=true`)        |
-| `--viz`                 | enable matplotlib previews (maps to `viz.enabled=true`)                                                                     |
+| `--viz`                 | enable expensive movie frames (maps to `io_and_plots.plots.movie_frames`)     |
 | `--override KEY=VAL …`  | *generic* overrides using dot‑notation. May be repeated.                                                                    |
 
 > **Notes on spike tracking**  
