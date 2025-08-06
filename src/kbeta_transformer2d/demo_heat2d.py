@@ -151,6 +151,11 @@ def _parse_cli() -> argparse.Namespace:
         key, val = pair.split("=", 1)
         fixed.append(f"{alias.get(key, key)}={val}")
     args.override = fixed
+    
+    if args.collect_spikes and not args.kour_diagnostics:
+        print("[info] --collect_spikes implies --kour_diagnostics → enabled")
+        args.kour_diagnostics = True
+    
     return args
 
 
