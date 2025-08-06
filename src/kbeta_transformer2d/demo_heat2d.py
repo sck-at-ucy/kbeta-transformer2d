@@ -451,43 +451,43 @@ def run_from_config(cfg: dict[str, Any]) -> None:
 
     
     # ——————————————————————————————————————————————
-    #  ⑦  Diagnostics → violin / heat‑maps (Kour only)
+    # Diagnostics → violin / heat‑maps (Kour only)
     # ——————————————————————————————————————————————
-track_cfg = cfg.get("tracking", {})
-collect   = track_cfg.get("collect_spikes", False)
-is_kour   = cfg["optimizer"]["name"].lower().startswith("kour")
-
-# Have we actually accumulated *any* values?
-has_data  = any(len(v) for v in sunspike_dict.values())
-
-if collect and is_kour and has_data:
-    window      = int(track_cfg.get("window", 500))
-    plot_stride = int(track_cfg.get("plot_stride", 10 * window))
-
-    # ── violin plots ────────────────────────────────────────────────
-    save_distribution_violin_plot(
-        sunspike_dict, sample_every=plot_stride,
-        label="Sunspike", outdir=frames_dir / "sunspike_violin"
-    )
-    save_distribution_violin_plot(
-        beta2_dict, sample_every=plot_stride,
-        label="Beta2",    outdir=frames_dir / "beta2_violin"
-    )
-
-    # ── density heat‑maps ───────────────────────────────────────────
-    save_distribution_density_heatmap(
-        sunspike_dict, label="Sunspike",
-        num_bins=20, value_range=(0.0, 1.0),
-        outdir=frames_dir / "sunspike_density",
-    )
-    save_distribution_density_heatmap(
-        beta2_dict, label="Beta2",
-        num_bins=20, value_range=(0.88, 1.0),
-        outdir=frames_dir / "beta2_density",
-    )
-else:
-    print("[plots] Skipped sun‑spike / β₂ plots — "
-          f"collect={collect}, is_kour={is_kour}, has_data={has_data}")
+    track_cfg = cfg.get("tracking", {})
+    collect   = track_cfg.get("collect_spikes", False)
+    is_kour   = cfg["optimizer"]["name"].lower().startswith("kour")
+    
+    # Have we actually accumulated *any* values?
+    has_data  = any(len(v) for v in sunspike_dict.values())
+    
+    if collect and is_kour and has_data:
+        window      = int(track_cfg.get("window", 500))
+        plot_stride = int(track_cfg.get("plot_stride", 10 * window))
+    
+        # ── violin plots ────────────────────────────────────────────────
+        save_distribution_violin_plot(
+            sunspike_dict, sample_every=plot_stride,
+            label="Sunspike", outdir=frames_dir / "sunspike_violin"
+        )
+        save_distribution_violin_plot(
+            beta2_dict, sample_every=plot_stride,
+            label="Beta2",    outdir=frames_dir / "beta2_violin"
+        )
+    
+        # ── density heat‑maps ───────────────────────────────────────────
+        save_distribution_density_heatmap(
+            sunspike_dict, label="Sunspike",
+            num_bins=20, value_range=(0.0, 1.0),
+            outdir=frames_dir / "sunspike_density",
+        )
+        save_distribution_density_heatmap(
+            beta2_dict, label="Beta2",
+            num_bins=20, value_range=(0.88, 1.0),
+            outdir=frames_dir / "beta2_density",
+        )
+    else:
+        print("[plots] Skipped sun‑spike / β₂ plots — "
+            f"collect={collect}, is_kour={is_kour}, has_data={has_data}")
 
     # non‑autoregressive baseline
     average_mse = evaluate_model_block_sequence(
