@@ -96,7 +96,17 @@ def _parse_cli() -> argparse.Namespace:
     p.add_argument("--epochs", type=int)
     p.add_argument("--optimizer", choices=["adam95", "adam999", "kourkoutas"])
     p.add_argument("--kour_diagnostics", action="store_true")
-    p.add_argument("--collect_spikes", action="store_true")
+    p.add_argument("--collect_spikes", action="store_true",
+                   help="Enable collection of per‑layer Sun‑spike / β₂ "
+                        "statistics during training.")
+
+    p.add_argument("--spike_window", type=int, metavar="N",
+                   help="Aggregate Sun‑spike / β₂ samples over N epochs "
+                        "before committing them (maps to tracking.window).")
+
+    p.add_argument("--spike_stride", type=int, metavar="M",
+                   help="Show only every M‑th committed window in the violin / "
+                        "heat‑map plots (maps to tracking.plot_stride).")
     p.add_argument("--viz", action="store_true")
 
     # free‑form KEY=VAL overrides
@@ -121,6 +131,8 @@ def _parse_cli() -> argparse.Namespace:
         "optimizer": "optimizer.name",
         "kour_diagnostics": "optimizer.kour_diagnostics",
         "collect_spikes": "tracking.collect_spikes",
+        "spike_window": "tracking.window",
+        "spike_stride": "tracking.plot_stride",
         "viz": "viz.enabled",
     }
     for attr, dest in shorthand.items():
