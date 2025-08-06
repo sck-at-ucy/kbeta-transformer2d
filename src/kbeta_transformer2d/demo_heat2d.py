@@ -143,7 +143,8 @@ def _parse_cli() -> argparse.Namespace:
         "collect_spikes": "tracking.collect_spikes",
         "spike_window": "tracking.window",
         "spike_stride": "tracking.plot_stride",
-        "viz": "viz.enabled",
+        "viz": "io_and_plots.plots.movie_frames",
+}
     }
     for attr, dest in shorthand.items():
         val = getattr(args, attr)
