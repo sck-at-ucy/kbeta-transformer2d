@@ -153,7 +153,7 @@ def _parse_cli() -> argparse.Namespace:
     args.override = fixed
     
     if args.collect_spikes and not args.kour_diagnostics:
-        print("[info] --collect_spikes implies --kour_diagnostics → enabled")
+        print("[info] --collect_spikes implies --kour_diagnostics → auto-enabled")
         args.kour_diagnostics = True
     
     return args
