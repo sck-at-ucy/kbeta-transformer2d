@@ -290,12 +290,14 @@ def run_from_config(cfg: dict[str, Any]) -> None:
         )
 
     # Now set up new directories for saving after restarting
-    (
-        save_dir_path,
-        dataset_save_dir_path,
-        frameplots_save_dir_path,
-        inference_mse_dir_path,
-    ) = setup_save_directories(run_name, config["checkpoint_epoch"])
+    
+    out_root: str | None = config.get("storage", {}).get("outdir")   # may be absent
+    save_dir_path, dataset_save_dir_path, frameplots_save_dir_path, \
+        inference_mse_dir_path = setup_save_directories(
+            run_name,
+            restart_epoch=config.get("checkpoint_epoch"),
+            base_dir=out_root,        # <── NEW
+        )
 
     # Define the directory path where the model and configuration will be saved
     model_base_file_name = f"heat_diffusion_2D_model_BeyondL_{run_name}"
