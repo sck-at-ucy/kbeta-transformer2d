@@ -132,16 +132,88 @@ def load_model_and_optimizer(
     model,
     optimizer,
     mx_random_state,
-    dir_path: Path,
+    dir_path: str | Path,
     model_base_file_name: str,
     optimizer_base_file_name: str,
     hyper_base_file_name: str,
     checkpoint_epoch: int,
     comparison: bool = True,
-) -> tuple[int, dict, Any, dict, dict]:
-    """(unchanged – only minor refactor to Path API)"""
-    # … keep your existing implementation, but build the *Path* objects via
-    #   dir_path / f"...", then use .open() or str(path) where MLX insists.
+) -> tuple[int, dict[str, Any], Any, dict[str, Any], dict[str, Any]]:
+    """
+    Reload model parameters, optimiser state, RNG state and config
+    from a given *checkpoint_epoch* stored under *dir_path*.
 
-    # (omitted here for brevity – paste your current body)
-    ...
+    Returns
+    -------
+    start_epoch          : int
+    loaded_optimizer_state : dict
+    loaded_random_state    : mx.random state‑object
+    loaded_parameters      : dict  (model parameters)
+    loaded_config          : dict  (training config at save‑time)
+    """
+
+    # ------------------------------------------------------------------ #
+    # 1) construct paths with pathlib                                    #
+    # ------------------------------------------------------------------ #
+    dir_path = Path(dir_path).expanduser()
+
+    model_file      = dir_path / f"{model_base_file_name}_epoch_{checkpoint_epoch}.pkl"
+    weights_file    = dir_path / f"{model_base_file_name}_weights_epoch_{checkpoint_epoch}.safetensors"
+    optimizer_file  = dir_path / f"{optimizer_base_file_name}_epoch_{checkpoint_epoch}.pkl"
+    random_state_p  = dir_path / f"random_state_epoch_{checkpoint_epoch}.pkl"
+    config_file     = dir_path / f"{hyper_base_file_name}_epoch_{checkpoint_epoch}.json"
+
+    # ------------------------------------------------------------------ #
+    # 2) existence check                                                 #
+    # ------------------------------------------------------------------ #
+    required = [model_file, weights_file, optimizer_file, random_state_p, config_file]
+    if not all(p.exists() for p in required):
+        print(f"[load_model_and_optimizer] no checkpoint found at epoch {checkpoint_epoch} – starting fresh.")
+        return 0, {}, mx_random_state, {}, {}
+
+    # ------------------------------------------------------------------ #
+    # 3) load artefacts                                                  #
+    # ------------------------------------------------------------------ #
+    with model_file.open("rb") as fh:
+        loaded_parameters = pickle.load(fh)
+
+    with optimizer_file.open("rb") as fh:
+        loaded_optimizer_state = pickle.load(fh)
+
+    with random_state_p.open("rb") as fh:
+        loaded_random_state = pickle.load(fh)
+
+    with config_file.open("r", encoding="utf‑8") as fh:
+        loaded_config = json.load(fh)
+
+    start_epoch = int(loaded_config.get("current_epoch", 0))
+
+    # ------------------------------------------------------------------ #
+    # 4) (optional) compare with current in‑memory states                #
+    # ------------------------------------------------------------------ #
+    if comparison:
+        print(f"[load_model_and_optimizer] comparing checkpoint vs. in‑memory objects …")
+        if compare_dict_states(optimizer.state, loaded_optimizer_state, "optimizer"):
+            print("   ✓ optimiser state matches")
+        else:
+            print("   ✗ optimiser state differs")
+
+        if compare_list_states(mx_random_state, loaded_random_state, "random state"):
+            print("   ✓ MX random state matches")
+        else:
+            print("   ✗ MX random state differs")
+
+        if compare_dict_states(model.parameters(), loaded_parameters, "model params"):
+            print("   ✓ model parameters match")
+        else:
+            print("   ✗ model parameters differ")
+
+    print(f"[load_model_and_optimizer] checkpoint epoch {checkpoint_epoch} loaded from {dir_path}")
+
+    return (
+        start_epoch,
+        loaded_optimizer_state,
+        loaded_random_state,
+        loaded_parameters,
+        loaded_config,
+    )
