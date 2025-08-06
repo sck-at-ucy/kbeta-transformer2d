@@ -97,8 +97,8 @@ def _parse_cli() -> argparse.Namespace:
     p.add_argument("--optimizer", choices=["adam95", "adam999", "kourkoutas"])
     p.add_argument("--kour_diagnostics", action="store_true")
     p.add_argument("--collect_spikes", action="store_true",
-                   help="Enable collection of per‑layer Sun‑spike / β₂ "
-                        "statistics during training.")
+                   help="Collect per‑layer *Sun‑spike* /&nbsp;β₂ statistics for "
+                        "violin / density plots (implies --kour_diagnostics).")
 
     p.add_argument("--spike_window", type=int, metavar="N",
                    help="Aggregate Sun‑spike / β₂ samples over N epochs "
@@ -450,7 +450,7 @@ def run_from_config(cfg: dict[str, Any]) -> None:
     if (
         track_cfg.get("collect_spikes", False)
         and cfg["optimizer"]["name"].lower().startswith("kour")
-        and sunspike_dict                         # skip if empty
+        and any(len(v) for v in sunspike_dict.values()  # skip if empty
     ):
         window       = int(track_cfg.get("window", 500))
         plot_stride  = int(track_cfg.get("plot_stride", 10 * window))
