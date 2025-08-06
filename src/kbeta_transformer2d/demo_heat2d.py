@@ -398,7 +398,8 @@ def run_from_config(cfg: dict[str, Any]) -> None:
     print("*** starting training ***")
     sunspike_dict: dict[int, list[float]] = {}
     beta2_dict: dict[int, list[float]] = {}
-
+    model.train()
+    
     train_and_validate(
         model,
         optimizer,
