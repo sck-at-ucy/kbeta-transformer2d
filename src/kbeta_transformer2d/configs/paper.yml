@@ -55,7 +55,7 @@ configuration_dump: false
 io_and_plots:
   plots:
     movie_frames: false
-    num_examples: 20
+    num_examples: 2
   model_saving: true
 # ─────────────────────────────────────────────────────────
 # evaluation‑specific settings

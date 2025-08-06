@@ -1,5 +1,5 @@
 # configs/heat2d.yml
-seed: 50
+seed: 0
 geometry:
   rod_length: 1.0
   rod_width: 1.0
