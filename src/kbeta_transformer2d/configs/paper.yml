@@ -91,3 +91,7 @@ optimizer:
   warmup_steps: 350
   bias_correction: "beta2max"
 #  layer_key_fn: my_layer_key_fn
+tracking:
+  collect_spikes: true
+  window:        1     # how many epochs per violin bin
+  plot_stride:   1    # override 10×window default if desired

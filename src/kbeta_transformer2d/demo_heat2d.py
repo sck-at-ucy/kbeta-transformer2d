@@ -399,7 +399,7 @@ def run_from_config(cfg: dict[str, Any]) -> None:
 
     model.train()
     
-    sunspike_dict, betas2_dict = train_and_validate(
+    sunspike_dict, beta2_dict = train_and_validate(
         model,
         optimizer,
         train_step,
@@ -430,30 +430,53 @@ def run_from_config(cfg: dict[str, Any]) -> None:
     io_and_plots = cfg.get("io_and_plots", {})
     plots_cfg = io_and_plots.get("plots", {})
 
-    # (optional) quick console sanity
-    print(f"[tracking] epochs with data  →  Sun‑spike:{list(sunspike_dict)}"
-          f"  |  β₂:{list(betas2_dict)}")
+    
+    # ——————————————————————————————————————————————
+    #  ⑦  Diagnostics → violin / heat‑maps (Kour only)
+    # ——————————————————————————————————————————————
+    track_cfg     = cfg.get("tracking", {})
+    if (
+        track_cfg.get("collect_spikes", False)
+        and cfg["optimizer"]["name"].lower().startswith("kour")
+        and sunspike_dict                         # skip if empty
+    ):
+        window       = int(track_cfg.get("window", 500))
+        plot_stride  = int(track_cfg.get("plot_stride", 10 * window))
 
-    # violin & density
-    save_distribution_violin_plot(
-        sunspike_dict, label="Sunspike", outdir=frames_dir / "sunspike_violin"
-    )
-    save_distribution_density_heatmap(
-        sunspike_dict,
-        label="Sunspike",
-        value_range=(0.0, 1.0),
-        outdir=frames_dir / "sunspike_density",
-    )
+        print(f"[tracking] epochs with data  →  Sun‑spike:{list(sunspike_dict)}"
+              f"  |  β₂:{list(beta2_dict)}   |  stride:{plot_stride}")
 
-    save_distribution_violin_plot(
-        betas2_dict, label="Beta2", outdir=frames_dir / "beta2_violin"
-    )
-    save_distribution_density_heatmap(
-        betas2_dict,
-        label="Beta2",
-        value_range=(0.88, 1.0),
-        outdir=frames_dir / "beta2_density",
-    )
+        # violin + swarm
+        save_distribution_violin_plot(
+            sunspike_dict,
+            sample_every=plot_stride,
+            label="Sunspike",
+            outdir=frames_dir / "sunspike_violin",
+        )
+        save_distribution_violin_plot(
+            beta2_dict,
+            sample_every=plot_stride,
+            label="Beta2",
+            outdir=frames_dir / "beta2_violin",
+        )
+
+        # density heat‑maps (all epochs)
+        save_distribution_density_heatmap(
+            sunspike_dict,
+            label="Sunspike",
+            num_bins=20,
+            value_range=(0.0, 1.0),
+            outdir=frames_dir / "sunspike_density",
+        )
+        save_distribution_density_heatmap(
+            beta2_dict,
+            label="Beta2",
+            num_bins=20,
+            value_range=(0.88, 1.0),
+            outdir=frames_dir / "beta2_density",
+        )
+    
+    
 
     # non‑autoregressive baseline
     average_mse = evaluate_model_block_sequence(

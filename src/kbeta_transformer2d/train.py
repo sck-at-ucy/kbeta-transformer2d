@@ -132,11 +132,11 @@ def train_and_validate(
     # ------------------------------------------------------------
     tr_cfg        = cfg.get("tracking", {})
     track_diag    = tr_cfg.get("collect_spikes", False)
-    WINDOW        = int(tr_cfg.get("window", 500))        # epochs / commit
+    WINDOW        = int(tr_cfg.get("window", 1))          # epochs per violin window
 
     sunspike_log  : dict[int, list[float]] = {}
     beta2_log     : dict[int, list[float]] = {}
-    _buf_spikes   : list[float] = []          # rolling window
+    _buf_spikes   : list[float] = []   # rolling window
     _buf_betas2   : list[float] = []
 
 
@@ -240,6 +240,11 @@ def train_and_validate(
                 hyper_base_file_name,
             )
         model.train()
+    # ── flush final (partial) window, if any ───────────────────────────
+    if track_diag and (_buf_spikes or _buf_betas2):
+        sunspike_log[epochs] = _buf_spikes
+        beta2_log  [epochs] = _buf_betas2
+
 
     toc = time.perf_counter()
     tpi = (toc - tic) / 60 / (epochs + 1 - start_epoch)
