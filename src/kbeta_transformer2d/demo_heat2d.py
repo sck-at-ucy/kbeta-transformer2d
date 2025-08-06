@@ -432,7 +432,7 @@ def run_from_config(cfg: dict[str, Any]) -> None:
 
     # (optional) quick console sanity
     print(f"[tracking] epochs with data  →  Sun‑spike:{list(sunspike_dict)}"
-          f"  |  β₂:{list(beta2_dict)}")
+          f"  |  β₂:{list(betas2_dict)}")
 
     # violin & density
     save_distribution_violin_plot(
@@ -446,10 +446,10 @@ def run_from_config(cfg: dict[str, Any]) -> None:
     )
 
     save_distribution_violin_plot(
-        beta2_dict, label="Beta2", outdir=frames_dir / "beta2_violin"
+        betas2_dict, label="Beta2", outdir=frames_dir / "beta2_violin"
     )
     save_distribution_density_heatmap(
-        beta2_dict,
+        betas2_dict,
         label="Beta2",
         value_range=(0.88, 1.0),
         outdir=frames_dir / "beta2_density",
