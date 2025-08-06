@@ -400,7 +400,7 @@ def run_from_config(cfg: dict[str, Any]) -> None:
     beta2_dict: dict[int, list[float]] = {}
     model.train()
     
-    train_and_validate(
+    sunspike_dict, betas2_dict = train_and_validate(
         model,
         optimizer,
         train_step,
@@ -430,6 +430,8 @@ def run_from_config(cfg: dict[str, Any]) -> None:
     # ---------------------------------------------------------------------
     io_and_plots = cfg.get("io_and_plots", {})
     plots_cfg = io_and_plots.get("plots", {})
+    print(sunspike_dict)
+    print(beta2_dict)
 
     # violin & density
     save_distribution_violin_plot(

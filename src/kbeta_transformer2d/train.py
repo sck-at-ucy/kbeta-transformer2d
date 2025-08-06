@@ -126,6 +126,16 @@ def train_and_validate(
     # Set learning rate to match the reload epoch (caution: filenames are based on epoch+1)
     # optimizer.learning_rate = get_learning_rate_for_epoch(start_epoch, learning_rate_schedule)
 
+
+    # ------------------------------------------------------------
+    # optional diagnostic buffers   ──────────────────────────────
+    # shape:  { epoch → [float, …] }
+    # ------------------------------------------------------------
+    track_diag   = cfg.get("tracking", {}).get("collect_spikes", False)
+    sunspike_log = {}            # type: dict[int, list[float]]
+    beta2_log    = {}            # type: dict[int, list[float]]
+
+
     tic = time.perf_counter()
     print(
         f"start_epoch: {start_epoch} epochs: {epochs} learning_rate: {optimizer.learning_rate}"
@@ -144,6 +154,15 @@ def train_and_validate(
             train_data, train_alphas, train_dts, batch_size, shuffle=True
         ):
             loss = train_step(src, target, src_alphas, src_dts, dx, dy)
+            
+            # --------------------------------------------
+            #  collect *sunspike* & β₂ for this batch
+            # --------------------------------------------
+            if track_diag and hasattr(optimizer, "snapshot_diagnostics"):
+                d = optimizer.snapshot_diagnostics()   # cheap; pure reading
+                sunspike_log.setdefault(epoch + 1, []).append(d["diag_sunspike"])
+                beta2_log   .setdefault(epoch + 1, []).append(d["diag_beta2"])
+            
             total_train_loss += loss.item()
             num_train_batches += 1
             mx.eval(model, optimizer.state)
@@ -170,10 +189,12 @@ def train_and_validate(
             f"Number of Train batches: {num_train_batches}, "
         )
 
-        # inside the epoch loop AFTER validation
-        if hasattr(optimizer, "snapshot_diagnostics") and getattr(  # implemented
+        # --------------------------------------------
+        #  pretty print epoch summary *and* diagnostics
+        # --------------------------------------------
+        if hasattr(optimizer, "snapshot_diagnostics") and getattr(
             optimizer, "_diag", False
-        ):  # counters enabled
+        ):
             # Kourkoutas – rich info available
             diags = optimizer.snapshot_diagnostics()
             print(
@@ -209,6 +230,10 @@ def train_and_validate(
     toc = time.perf_counter()
     tpi = (toc - tic) / 60 / (epochs + 1 - start_epoch)
     print(f"Time per epoch {tpi:.3f} (min)")
+    # ----------------------------------------------------------------
+    #  return diagnostics for downstream plots (run_from_config needs)
+    # ----------------------------------------------------------------
+    return sunspike_log, beta2_log
 
 
 def evaluate_model(
