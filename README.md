@@ -115,7 +115,7 @@ python -m kbeta_transformer2d.demo_heat2d <CONFIG.yml> [flags]
 | `--override KEY=VAL …`  | *generic* overrides using dot‑notation. May be repeated.                                                                    |
 
 > **Notes on spike tracking**  
-> To actually record Sun‑spike/β₂ you need **all** of: `--optimizer=kourkoutas`, `--kour_diagnostics`, **and** `--collect_spikes`.  
+> To actually record Sun‑spike/β₂ you need **all** of: `--optimizer=kourkoutas`, `--kour_diagnostics`, **and** `--collect_spikes`. Enabling `--collect_spikes` auto-enables `--kour_diagnostics` as well.
 > The windowing/plot stride is controlled via YAML (see below).
 
 ### Examples
