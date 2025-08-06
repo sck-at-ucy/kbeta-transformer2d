@@ -1,19 +1,18 @@
-"""
-demo_heat2d.py – refactored for modular CLI use
-Author: Stavros Kassinos, August 2025
--------------------------------------------------------
 
-• No top‑level side‑effects except for imports.
+"""
+demo_heat2d.py – modular CLI entry‑point for the 2‑D heat‑diffusion Transformer
+Author : Stavros Kassinos  (Aug 2025)
+
+Key traits
+──────────
+• Absolutely *no* side‑effects at import time – all work happens in main().
 • CLI parsing isolated in _parse_cli().
-• YAML‑file + CLI flags merged in build_config().
-• Former main‑block lives in run_from_config(cfg).
-• A thin main() keeps the file executable *and* importable.
+• YAML + CLI overrides merged by build_config().
+• run_from_config(cfg) is the one public “director” routine used by tests.
+• Thin main() wrapper keeps the module both importable *and* executable.
 """
 
-# ruff: noqa: E402
-
-
-# --- standard libs ----------------------------------------------------------
+# ruff: noqa: E402, F401 -----------------------------------------------------
 from __future__ import annotations
 
 import argparse
@@ -24,13 +23,15 @@ from importlib import resources
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-# ---mlx and third‑party -----------------------------------------------------
 import mlx.core as mx
 import mlx.optimizers as optim
 import numpy as np
 import yaml
 
-if TYPE_CHECKING:  # only seen by static analyzers
+# ---------------------------------------------------------------------------#
+# Optional forward references (mypy / IDEs only)                             #
+# ---------------------------------------------------------------------------#
+if TYPE_CHECKING:
     from .model import HeatDiffusionModel
 
     model: HeatDiffusionModel
@@ -39,61 +40,58 @@ if TYPE_CHECKING:  # only seen by static analyzers
     evaluate_step: object
     state: object
 
+# ---------------------------------------------------------------------------#
+# Global handles populated by run_from_config()                              #
+# ---------------------------------------------------------------------------#
+ARGS: Optional[argparse.Namespace] = None
+config: Optional[Dict[str, Any]] = None
 
-# -------------------------------------------------------------------------
-# Globals populated later in main()/run_from_config()
-# -------------------------------------------------------------------------
-ARGS: Optional[argparse.Namespace] = None  # CLI flags (kept for legacy use)
-config: Optional[Dict[str, Any]] = None  # unified YAML + CLI configuration
-
-
-# =========================================================================
-# 1) YAML helpers
-# =========================================================================
-_CONFIG_PACKAGE = "kbeta_transformer2d.configs"
+# ---------------------------------------------------------------------------#
+# 1) YAML helpers                                                            #
+# ---------------------------------------------------------------------------#
+_CONFIG_PKG = "kbeta_transformer2d.configs"
 
 
 def _resolve_config(arg: str | Path) -> Path:
     """
-    • If *arg* is an existing file path → return it unchanged.
-    • Otherwise treat *arg* as the *stem* of a config that lives in
-      kbeta_transformer2d/configs/ (with “.yml” appended).
+    Resolve **arg** to an actual YAML file path.
+
+    • If *arg* already points to a file, return it unchanged.
+    • Otherwise look for *arg*.yml inside the package’s “configs/” directory.
     """
     p = Path(arg).expanduser()
     if p.is_file():
-        return p  # user gave a real path
+        return p
 
     candidate = f"{arg}.yml" if not str(arg).endswith(".yml") else arg
     try:
-        with resources.as_file(resources.files(_CONFIG_PACKAGE) / candidate) as fp:
-            return fp  # ← path inside site‑packages
+        with resources.as_file(resources.files(_CONFIG_PKG) / candidate) as fp:
+            return fp
     except FileNotFoundError:
         raise FileNotFoundError(
-            f"Cannot find config {arg!r}. "
-            f"Either give an existing file path or one of the "
-            f"built‑in presets in {_CONFIG_PACKAGE}."
+            f"Cannot find config {arg!r}. Either give a real file path or one "
+            f"of the built‑in presets in {_CONFIG_PKG}."
         ) from None
 
 
 def _load_yaml(path: str | Path) -> dict[str, Any]:
-    path = _resolve_config(path)  # ← look‑up happens here
-    with path.open("r", encoding="utf‑8") as fh:  # ← explicit encoding
+    path = _resolve_config(path)
+    with path.open("r", encoding="utf‑8") as fh:
         return yaml.safe_load(fh)
 
 
-# --------------------------------------------------------------------------
-# 1) parse CLI  – all “overrides” end up in one flat list: args.override
-# --------------------------------------------------------------------------
+# ---------------------------------------------------------------------------#
+# 2) CLI                                                                     #
+# ---------------------------------------------------------------------------#
 def _parse_cli() -> argparse.Namespace:
     p = argparse.ArgumentParser(
         prog="python -m kbeta_transformer2d.demo_heat2d",
         description="2‑D heat‑diffusion Transformer (Apple‑MLX)",
     )
 
-    # mandatory YAML path
-    p.add_argument("config", metavar="YAML", help="Path to YAML configuration file")
+    p.add_argument("config", metavar="YAML", help="YAML configuration (file or preset)")
 
-    # convenience shorthands ------------------------------------------------
+    # convenient shorthands
     p.add_argument("--seed", type=int)
     p.add_argument("--epochs", type=int)
     p.add_argument("--optimizer", choices=["adam95", "adam999", "kourkoutas"])
@@ -101,7 +99,7 @@ def _parse_cli() -> argparse.Namespace:
     p.add_argument("--collect_spikes", action="store_true")
     p.add_argument("--viz", action="store_true")
 
-    # generic KEY=VAL overrides --------------------------------------------
+    # free‑form KEY=VAL overrides
     p.add_argument(
         "--override",
         action="extend",
@@ -113,10 +111,8 @@ def _parse_cli() -> argparse.Namespace:
 
     args = p.parse_args()
 
-    # ------------------------------------------------------------------
-    # ❶ push shorthand flags into args.override
-    # ------------------------------------------------------------------
-    def _as_json(v):
+    # ── ❶ fold shorthand flags into args.override ─────────────────────────
+    def _js(v):  # JSON‑stringify booleans so “true/false” are parsed correctly
         return json.dumps(v) if isinstance(v, bool) else str(v)
 
     shorthand = {
@@ -127,83 +123,67 @@ def _parse_cli() -> argparse.Namespace:
         "collect_spikes": "tracking.collect_spikes",
         "viz": "viz.enabled",
     }
-
     for attr, dest in shorthand.items():
         val = getattr(args, attr)
         if val is None or (isinstance(val, bool) and not val):
             continue
-        args.override.append(f"{dest}={_as_json(val)}")
+        args.override.append(f"{dest}={_js(val)}")
 
-    # ------------------------------------------------------------------
-    # ❷ rewrite *aliases* that the user might have typed by hand
-    # ------------------------------------------------------------------
+    # ── ❷ normalise common aliases (epochs=…, kour_diagnostics=…) ─────────
     alias = {
         "epochs": "model_params.epochs",
         "kour_diagnostics": "optimizer.kour_diagnostics",
-        # add more aliases here if you like
     }
-
-    fixed = []
+    fixed: list[str] = []
     for pair in args.override:
         key, val = pair.split("=", 1)
-        key = alias.get(key, key)  # expand if alias known
-        fixed.append(f"{key}={val}")
+        fixed.append(f"{alias.get(key, key)}={val}")
     args.override = fixed
-
     return args
 
 
-# --------------------------------------------------------------------------
-# 2) a *single* canonical routine that mutates the cfg in‑place
-# --------------------------------------------------------------------------
-def _apply_overrides(cfg: dict[str, Any], kv_strings: list[str]) -> None:
+# ---------------------------------------------------------------------------#
+# 3) YAML ← CLI merge                                                        #
+# ---------------------------------------------------------------------------#
+def _apply_overrides(cfg: dict[str, Any], kv_pairs: list[str]) -> None:
     """
-    Apply KEY=VAL overrides to a (possibly nested) dict *in place*.
-
-    Supports dot‑notation in keys and JSON‑decodable values.
+    In‑place dot‑notation override helper.
     """
-    for pair in kv_strings:
+    for pair in kv_pairs:
         if "=" not in pair:
             raise ValueError(f"--override expects KEY=VAL, got {pair!r}")
-
         key, raw_val = pair.split("=", 1)
-        try:  # try int/float/bool/list/…
+        try:
             val: Any = json.loads(raw_val)
-        except Exception:
-            val = raw_val  # fall back to plain string
+        except Exception:  # plain string
+            val = raw_val
 
-        target = cfg
+        tgt = cfg
         *parents, leaf = key.split(".")
-        for part in parents:  # descend / create as needed
-            target = target.setdefault(part, {})
-        target[leaf] = val
+        for part in parents:
+            tgt = tgt.setdefault(part, {})
+        tgt[leaf] = val
 
 
-# --------------------------------------------------------------------------
-# 3) build the final configuration dict
-# --------------------------------------------------------------------------
 def build_config() -> dict[str, Any]:
     """
-    YAML ▸ CLI overrides ▸ return merged dict.
-    Precedence: CLI > --override > YAML.
+    CLI ▸ YAML ▸ overrides → final dict (CLI takes precedence).
     """
-    args = _parse_cli()  # ① parse everything
-    cfg = _load_yaml(args.config)  # ② base YAML
-    _apply_overrides(cfg, args.override)  # ③ mutate in‑place
+    args = _parse_cli()
+    cfg = _load_yaml(args.config)
+    _apply_overrides(cfg, args.override)
 
-    # ensure top‑level ‘seed’ or ‘epochs’ are mirrored where the code expects them
-    if "seed" in cfg:
-        cfg["seed"] = int(cfg["seed"])  # override may have made it str/float
+    # convenience mirrors
     if "epochs" in cfg:
         cfg.setdefault("model_params", {})["epochs"] = int(cfg.pop("epochs"))
+    if "seed" in cfg:
+        cfg["seed"] = int(cfg["seed"])
     return cfg
 
 
-# =========================================================================
-# 3) Import all required modules from transformer
-# =========================================================================
-
-
+# ---------------------------------------------------------------------------#
+# 4) heavy imports (delay until after CLI for faster “‑h” startup)           #
+# ---------------------------------------------------------------------------#
 from .data import (
     data_loader_2D,
     generate_datasets,
@@ -226,13 +206,11 @@ from .plot_utils import (
     save_distribution_density_heatmap,
     save_distribution_violin_plot,
 )
-
-# from .train import (train_and_validate, evaluate_model,evaluate_model_block_sequence)
 from .train import (
     evaluate_model,
     evaluate_model_block_sequence,
-    evaluate_self_regressive_model_BeyondL,  # todo: <----- Need to fix so that it does need matplotlib in train.py
-    make_train_and_eval_steps,  # <- we’ll create these two helpers in train.py
+    evaluate_self_regressive_model_BeyondL,
+    make_train_and_eval_steps,
     train_and_validate,
 )
 from .utils import (
@@ -244,79 +222,53 @@ from .utils import (
     print_fresh_run_config,
 )
 
-
-# =========================================================================
-#  4) “run_from_config” Director
-# =========================================================================
+# ---------------------------------------------------------------------------#
+# 5) top‑level run director                                                  #
+# ---------------------------------------------------------------------------#
 def run_from_config(cfg: dict[str, Any]) -> None:
     global config, ARGS, model, optimizer, state, train_step, evaluate_step
     config = cfg
 
-    seed = config.get("seed", 30)
+    # ----- seeds ----------------------------------------------------------
+    seed = cfg.get("seed", 30)
     np.random.seed(seed)
     mx.random.seed(seed)
 
-    hostname = socket.gethostname()
-    print("mx.random  state:", mx.random.state)  # MLX
-    print("np.random  seed :", np.random.get_state()[1][0])  # type: ignore[index]
-
+    print("mx.random state:", mx.random.state)
+    print("np.random seed :", np.random.get_state()[1][0])  # type: ignore[index]
     print(
-        f"Configuration: {config['boundary_segment_strategy']}:{config['model_params']['mask_type']}"
+        f"Configuration: {cfg['boundary_segment_strategy']} : "
+        f"{cfg['model_params']['mask_type']}"
     )
-    print(f"Hostname: {hostname}: DYLD_LIBRARY_PATH:{os.getenv('DYLD_LIBRARY_PATH')}")
+    print(f"Hostname: {socket.gethostname()}")
 
-    # Choose the save_interval based on save_checkpoints
-    if config["save_checkpoints"]:
-        config["save_interval"] = 10  # Set a reasonable interval for saving
-    else:
-        config["save_interval"] = (
-            config["model_params"]["epochs"] + 1
-        )  # Disable saving by setting it beyond the number of epochs
+    # ----- root output dir ------------------------------------------------
+    out_root: str | None = cfg.get("storage", {}).get("outdir")
+    # fall back to CWD if unspecified
+    base_out = Path(out_root).expanduser().resolve() if out_root else Path.cwd()
 
-    # Set the run name as a parameter using Config parameters for identification of files/folders
-    run_name = (
-        str(config["run_label"])
-        + "_"
-        + str(config["boundary_segment_strategy"])
-        + "_"
-        + str(config["model_params"]["mask_type"])
-    )
-    # Set the run name based on configuration
+    # ----- run label ------------------------------------------------------
+    run_name = f"{cfg['run_label']}_{cfg['boundary_segment_strategy']}_" \
+               f"{cfg['model_params']['mask_type']}"
 
-    if not config["start_from_scratch"]:
-        # Load model and optimizer from a checkpoint directory
-        load_dir_path, dataset_load_dir_path = setup_load_directories(
-            run_name, config["checkpoint_epoch"]
-        )
-
-    # Now set up new directories for saving after restarting
-    
-    out_root: str | None = config.get("storage", {}).get("outdir")   # may be absent
-    save_dir_path, dataset_save_dir_path, frameplots_save_dir_path, \
-        inference_mse_dir_path = setup_save_directories(
-            run_name,
-            restart_epoch=config.get("checkpoint_epoch"),
-            base_dir=out_root,        # <── NEW
-        )
-
-    # Define the directory path where the model and configuration will be saved
-    model_base_file_name = f"heat_diffusion_2D_model_BeyondL_{run_name}"
-    hyper_base_file_name = f"config.json_BeyondL_{run_name}"
-    optimizer_base_file_name = f"optimizer_state_BeyondL_{run_name}"
-
-    if config[
-        "start_from_scratch"
-    ]:  # This is a fresh run, create new datasets, save them to file and check
+    # ---------------------------------------------------------------------
+    # ① dataset creation / loading
+    # ---------------------------------------------------------------------
+    if cfg["start_from_scratch"]:
         (
             nx,
             ny,
-            training_bcs,
-            validation_bcs,
+            train_bcs,
+            val_bcs,
             test_bcs,
-            training_alphas,
-            validation_alphas,
-            test_alphas,
-        ) = initialize_geometry_and_bcs(config)
+            train_a,
+            val_a,
+            test_a,
+        ) = initialize_geometry_and_bcs(cfg)
+
+        data = generate_datasets(
+            cfg, train_bcs, val_bcs, test_bcs, train_a, val_a, test_a
+        )
         (
             training_data_mlx,
             training_alphas_mlx,
@@ -327,16 +279,12 @@ def run_from_config(cfg: dict[str, Any]) -> None:
             test_data_mlx,
             test_alphas_mlx,
             test_dts_mlx,
-        ) = generate_datasets(
-            config,
-            training_bcs,
-            validation_bcs,
-            test_bcs,
-            training_alphas,
-            validation_alphas,
-            test_alphas,
-        )
+        ) = data
 
+        # save raw datasets next to other artifacts
+        _, dataset_dir, *_ = setup_save_directories(
+            run_name, base_dir=base_out, restart_epoch=None
+        )
         save_datasets(
             training_data_mlx,
             training_alphas_mlx,
@@ -347,57 +295,13 @@ def run_from_config(cfg: dict[str, Any]) -> None:
             test_data_mlx,
             test_alphas_mlx,
             test_dts_mlx,
-            dataset_save_dir_path,
+            dataset_dir,
         )
-
-        (
-            training_data_mlx_loaded,
-            training_alphas_mlx_loaded,
-            training_dts_mlx_loaded,
-            validation_data_mlx_loaded,
-            validation_alphas_mlx_loaded,
-            validation_dts_mlx_loaded,
-            test_data_mlx_loaded,
-            test_alphas_mlx_loaded,
-            test_dts_mlx_loaded,
-        ) = load_datasets(dataset_save_dir_path)
-
-        # Compare datasets to make sure that they were saved correctly and match when reloaded
-        datasets_match = True
-        datasets_match &= compare_datasets(
-            training_data_mlx, training_data_mlx_loaded, "training_data_mlx"
-        )
-        datasets_match &= compare_datasets(
-            training_alphas_mlx, training_alphas_mlx_loaded, "training_alphas_mlx"
-        )
-        datasets_match &= compare_datasets(
-            training_dts_mlx, training_dts_mlx_loaded, "training_dts_mlx"
-        )
-        datasets_match &= compare_datasets(
-            validation_data_mlx, validation_data_mlx_loaded, "validation_data_mlx"
-        )
-        datasets_match &= compare_datasets(
-            validation_alphas_mlx, validation_alphas_mlx_loaded, "validation_alphas_mlx"
-        )
-        datasets_match &= compare_datasets(
-            validation_dts_mlx, validation_dts_mlx_loaded, "validation_dts_mlx"
-        )
-        datasets_match &= compare_datasets(
-            test_data_mlx, test_data_mlx_loaded, "test_data_mlx"
-        )
-        datasets_match &= compare_datasets(
-            test_alphas_mlx, test_alphas_mlx_loaded, "test_alphas_mlx"
-        )
-        datasets_match &= compare_datasets(
-            test_dts_mlx, test_dts_mlx_loaded, "test_dts_mlx"
-        )
-
-        if datasets_match:
-            print("All generated and saved datasets match.")
-        else:
-            print("Some datasets do not match.")
     else:
-        # Calculate derived parameters
+        # resume run  → locate previous dataset folder
+        load_dir, dataset_dir = setup_load_directories(
+            run_name, cfg["checkpoint_epoch"], base_dir=base_out
+        )
         (
             training_data_mlx,
             training_alphas_mlx,
@@ -408,276 +312,189 @@ def run_from_config(cfg: dict[str, Any]) -> None:
             test_data_mlx,
             test_alphas_mlx,
             test_dts_mlx,
-        ) = load_datasets(dataset_load_dir_path)
+        ) = load_datasets(dataset_dir)
         _, _, ny, nx = training_data_mlx.shape
 
-    print(f"training data shape: {training_data_mlx.shape}")
-    print(f"validation data shape: {validation_data_mlx.shape}")
+    print("training data shape   :", training_data_mlx.shape)
+    print("validation data shape :", validation_data_mlx.shape)
 
-    # Initialize model and optimizer
-    model, optimizer = initialize_model_and_optimizer(config, nx, ny)
+    # ---------------------------------------------------------------------
+    # ② model & optimiser
+    # ---------------------------------------------------------------------
+    model, optimizer = initialize_model_and_optimizer(cfg, nx, ny)
     model.eval()
 
-    mx_random_state = mx.random.state
+    # ---------------------------------------------------------------------
+    # ③ storage layout
+    # ---------------------------------------------------------------------
+    save_dir, dataset_dir, frames_dir, mse_dir = setup_save_directories(
+        run_name, base_dir=base_out, restart_epoch=cfg.get("checkpoint_epoch")
+    )
 
-    if not config["start_from_scratch"]:  # Reload from a previous checkpoint
-        checkpoint_epoch = config["checkpoint_epoch"]
-        print(load_dir_path)
+    # file stems (epoch suffixes are appended later)
+    model_base = f"heat_diffusion_2D_model_BeyondL_{run_name}"
+    optim_base = f"optimizer_state_BeyondL_{run_name}"
+    hyper_base = f"config.json_BeyondL_{run_name}"
+
+    # ---------------------------------------------------------------------
+    # ④ fresh vs resume checkpoint logic
+    # ---------------------------------------------------------------------
+    if not cfg["start_from_scratch"]:
+        chk_epoch = cfg["checkpoint_epoch"]
         (
             start_epoch,
-            loaded_optimizer_state,
-            loaded_random_state,
-            loaded_parameters,
-            loaded_config,
+            loaded_opt_state,
+            loaded_rng,
+            loaded_params,
+            loaded_cfg,
         ) = load_model_and_optimizer(
             model,
             optimizer,
-            mx_random_state,
-            load_dir_path,
-            model_base_file_name,
-            optimizer_base_file_name,
-            hyper_base_file_name,
-            checkpoint_epoch,
-            comparison=config["compare_current_loaded"],
+            mx.random.state,
+            load_dir,
+            model_base,
+            optim_base,
+            hyper_base,
+            chk_epoch,
+            comparison=cfg["compare_current_loaded"],
         )
-        if loaded_config:
-            # Convert lists to tuples in the loaded config for comparison purposes
-            loaded_config = convert_lists_to_tuples(loaded_config)
-
-            # Print side-by-side comparison of current and loaded config
-            print_config_comparison(config, loaded_config)
-
-        model.update(parameters=loaded_parameters)
-
-        print(f"Random state before reloading: {mx.random.state}")
-        mx.random.state = loaded_random_state
-        print(f"Random state after reloading: {mx.random.state}")
-        optimizer.init(model.trainable_parameters())
-        optimizer.state = loaded_optimizer_state
-        print("Current optimizer state after reloading:")
-        # print(f'   optimizer.betas: {optimizer.betas}')
-        print(f"   optimizer.eps: {optimizer.eps}")
-        print(f"   optimizer.step: {optimizer.step}")
-
-        if compare_dict_states(
-            optimizer.state, loaded_optimizer_state, "optimizer state"
-        ):
-            print("After reload: Optimizer state checks")
-        else:
-            print("After reload: Optimizer state mismatch detected.")
-
-        if compare_list_states(mx.random.state, loaded_random_state, "random state"):
-            print("After reload: Random state checks.")
-        else:
-            print("After reload: Random state mismatch detected.")
-
-        if compare_dict_states(model.parameters(), loaded_parameters, "model state"):
-            print("After reload: Model state checks.")
-        else:
-            print("After reload: Model state mismatch detected.")
-
-    else:  # Start fresh run from scratch
+        # update & sanity prints
+        model.update(parameters=loaded_params)
+        mx.random.state = loaded_rng
+        optimizer.state = loaded_opt_state
+    else:
         start_epoch = 0
-        if config.get("configuration_dump", False):
-            print_fresh_run_config(config)
+        if cfg.get("configuration_dump", False):
+            print_fresh_run_config(cfg)
 
-    eval_cfg = config.setdefault("eval", {})
+    # ---------------------------------------------------------------------
+    # ⑤ compile train / eval closures
+    # ---------------------------------------------------------------------
+    eval_cfg = cfg.setdefault("eval", {})
     n_replace = eval_cfg.get("n_replace", 5)
     n_initial = eval_cfg.get("n_initial_frames", 5)
 
-    train_step, evaluate_step, state = make_train_and_eval_steps(
+    train_step, eval_step, state = make_train_and_eval_steps(
         model,
         optimizer,
         loss_fn_2D,
         n_initial,
-        dx=config["geometry"]["dx"],
-        dy=config["geometry"]["dy"],
+        dx=cfg["geometry"]["dx"],
+        dy=cfg["geometry"]["dy"],
     )
 
-    print(
-        f"************************ Hostname: {hostname} Starting Training *********************** "
-    )
+    # ---------------------------------------------------------------------
+    # ⑥ training
+    # ---------------------------------------------------------------------
+    print("*** starting training ***")
+    sunspike_dict: dict[int, list[float]] = {}
+    beta2_dict: dict[int, list[float]] = {}
 
-    sunspike_dict: dict[int, list[float]] = {}  # outside the loop
-    betas2_dict: dict[int, list[float]] = {}
-    # Start or continue training
     train_and_validate(
         model,
         optimizer,
         train_step,
         data_loader_2D,
-        evaluate_step,
-        config,
+        eval_step,
+        cfg,
         training_data_mlx,
         training_alphas_mlx,
         training_dts_mlx,
         validation_data_mlx,
         validation_alphas_mlx,
         validation_dts_mlx,
-        config["model_params"]["batch_size"],
-        config["model_params"]["epochs"],
+        cfg["model_params"]["batch_size"],
+        cfg["model_params"]["epochs"],
         start_epoch,
-        config["save_interval"],
-        save_dir_path,  # ← new
-        model_base_file_name,  # ← new
-        optimizer_base_file_name,  # ← new
-        hyper_base_file_name,  # ← new
-        dx=config["geometry"]["dx"],
-        dy=config["geometry"]["dy"],
+        cfg["save_interval"],
+        save_dir,
+        model_base,
+        optim_base,
+        hyper_base,
+        dx=cfg["geometry"]["dx"],
+        dy=cfg["geometry"]["dy"],
     )
 
-    model.eval()
-
-    io_and_plots = config.get("io_and_plots", {})
+    # ---------------------------------------------------------------------
+    # ⑦ evaluation & plots
+    # ---------------------------------------------------------------------
+    io_and_plots = cfg.get("io_and_plots", {})
     plots_cfg = io_and_plots.get("plots", {})
 
-    (
-        save_dir_path,
-        dataset_save_dir_path,
-        frameplots_save_dir_path,
-        inference_mse_dir_path,
-    ) = setup_save_directories(run_name)
-
-    # save_distribution_violin_plot(sunspike_dict, label="Sunspike", outdir="./sunspike_violin_plots")
+    # violin & density
     save_distribution_violin_plot(
+        sunspike_dict, label="Sunspike", outdir=frames_dir / "sunspike_violin"
+    )
+    save_distribution_density_heatmap(
         sunspike_dict,
         label="Sunspike",
-        outdir="./sunspike_violin_plots",
-        baseline_value=None,
-        sample_every=5,  # keep only 5 & 10
-    )
-    # save_sunspike_density_heatmap(sunspike_dict, value_range=(0.0, 1.0), outdir="./sunspike_density_plots")
-    save_distribution_density_heatmap(
-        values_dict=sunspike_dict,
-        label="Sunspike",
-        num_bins=50,
         value_range=(0.0, 1.0),
-        outdir="./sunspike_density_plots",
-    )
-    save_distribution_violin_plot(
-        betas2_dict,
-        label="Beta2",
-        outdir="./betas2_violin_plots",
-        sample_every=5,  # keep only 5 & 10
-    )
-    # save_distribution_violin_plot(betas2_dict,  label="Beta2", outdir="./betas2_violin_plots")
-    # save_sunspike_density_heatmap(betas2_dict, value_range=(0.9, 1.0), outdir="./betas2_density_plots")
-    save_distribution_density_heatmap(
-        values_dict=betas2_dict,
-        label="Beta2",
-        num_bins=50,
-        value_range=(0.88, 1.0),
-        outdir="./betas2_density_plots",
+        outdir=frames_dir / "sunspike_density",
     )
 
-    evaluate_model(
+    save_distribution_violin_plot(
+        beta2_dict, label="Beta2", outdir=frames_dir / "beta2_violin"
+    )
+    save_distribution_density_heatmap(
+        beta2_dict,
+        label="Beta2",
+        value_range=(0.88, 1.0),
+        outdir=frames_dir / "beta2_density",
+    )
+
+    # non‑autoregressive baseline
+    average_mse = evaluate_model_block_sequence(
         model,
-        evaluate_step,
         data_loader_2D,
         test_data_mlx,
         test_alphas_mlx,
         test_dts_mlx,
-        config["geometry"]["dx"],
-        config["geometry"]["dy"],
-        config["model_params"]["batch_size"],
+        cfg["geometry"]["dx"],
+        cfg["geometry"]["dy"],
+        cfg["model_params"]["batch_size"],
+        cfg["model_params"]["time_steps"],
+        n_initial,
+        output_dir_block=mse_dir,
     )
+    plot_mse_evolution(average_mse, output_dir=mse_dir, label="block")
 
-    if config["model_params"]["mask_type"] == "causal":
-        # Call the autoregressive evaluation
-        average_mse = evaluate_self_regressive_model_BeyondL(
+    if plots_cfg.get("movie_frames", False):
+        plot_predictions_2D(
             model,
             data_loader_2D,
-            test_data_mlx,
-            test_alphas_mlx,
-            test_dts_mlx,
-            config["geometry"]["dx"],
-            config["geometry"]["dy"],
-            config["model_params"]["batch_size"],
-            config["model_params"]["time_steps"],
-            n_replace,
-            n_initial,
-            output_dir_regress=inference_mse_dir_path,
+            {
+                "data": test_data_mlx,
+                "alphas": test_alphas_mlx,
+                "solution_dts": test_dts_mlx,
+                "batch_size": cfg["model_params"]["batch_size"],
+                "shuffle": True,
+            },
+            num_examples=plots_cfg.get("num_examples", 20),
+            output_dir=frames_dir,
         )
 
-        plot_mse_evolution(
-            average_mse, output_dir=inference_mse_dir_path, label="causal"
-        )
-
-        if plots_cfg.get("movie_frames", False):
-            plot_regressive_predictions_2D(
-                model,
-                data_loader_2D,
-                {
-                    "data": test_data_mlx,
-                    "alphas": test_alphas_mlx,
-                    "solution_dts": test_dts_mlx,
-                    "batch_size": config["model_params"]["batch_size"],
-                    "shuffle": True,
-                },
-                n_replace=n_replace,
-                n_initial=n_initial,
-                num_examples=plots_cfg.get("num_examples", 20),
-                output_dir=frameplots_save_dir_path,
-                t_trained=None,
-            )
-
-    elif config["model_params"]["mask_type"] == "block":
-        # Call the full sequence evaluation (non-autoregressive)
-        average_mse = evaluate_model_block_sequence(
-            model,
-            data_loader_2D,
-            test_data_mlx,
-            test_alphas_mlx,
-            test_dts_mlx,
-            config["geometry"]["dx"],
-            config["geometry"]["dy"],
-            config["model_params"]["batch_size"],
-            config["model_params"]["time_steps"],
-            n_initial,
-            output_dir_block=inference_mse_dir_path,
-        )
-        plot_mse_evolution(
-            average_mse, output_dir=inference_mse_dir_path, label="block"
-        )
-
-        if plots_cfg.get("movie_frames", False):
-            plot_predictions_2D(
-                model,
-                data_loader_2D,
-                {
-                    "data": test_data_mlx,
-                    "alphas": test_alphas_mlx,
-                    "solution_dts": test_dts_mlx,
-                    "batch_size": config["model_params"]["batch_size"],
-                    "shuffle": True,
-                },
-                num_examples=plots_cfg.get("num_examples", 20),
-                output_dir=frameplots_save_dir_path,
-                t_trained=None,
-            )
-
-    mx_random_state = mx.random.state
+    # optional full checkpoint at end
     if io_and_plots.get("model_saving", False):
         save_model_and_optimizer(
             model,
             optimizer,
-            mx_random_state,
-            config,
-            config["model_params"]["epochs"],
-            save_dir_path,
-            model_base_file_name,
-            optimizer_base_file_name,
-            hyper_base_file_name,
+            mx.random.state,
+            cfg,
+            cfg["model_params"]["epochs"],
+            save_dir,
+            model_base,
+            optim_base,
+            hyper_base,
         )
 
+    print(f"[done] Artifacts in {save_dir.parent}")
 
-# =========================================================================
-#  4) thin executable wrapper
-# =========================================================================
+
+# ---------------------------------------------------------------------------#
+# thin executable wrapper                                                    #
+# ---------------------------------------------------------------------------#
 def main() -> None:
-    """Keeps the file runnable *and* importable as an entry‑point"""
-    # build_config() parses the CLI, loads YAML, applies overrides
-    cfg = build_config()  # ← uses the helper defined at the top
+    cfg = build_config()
     run_from_config(cfg)
 
 
