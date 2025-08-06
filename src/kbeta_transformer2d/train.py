@@ -126,19 +126,17 @@ def train_and_validate(
     # Set learning rate to match the reload epoch (caution: filenames are based on epoch+1)
     # optimizer.learning_rate = get_learning_rate_for_epoch(start_epoch, learning_rate_schedule)
 
-
     # ------------------------------------------------------------
     #  light‑weight per‑epoch statistics (Sun‑spike & β₂)
     # ------------------------------------------------------------
-    tr_cfg        = cfg.get("tracking", {})
-    track_diag    = tr_cfg.get("collect_spikes", False)
-    WINDOW        = int(tr_cfg.get("window", 1))          # epochs per violin window
+    tr_cfg = cfg.get("tracking", {})
+    track_diag = tr_cfg.get("collect_spikes", False)
+    WINDOW = int(tr_cfg.get("window", 1))  # epochs per violin window
 
-    sunspike_log  : dict[int, list[float]] = {}
-    beta2_log     : dict[int, list[float]] = {}
-    _buf_spikes   : list[float] = []   # rolling window
-    _buf_betas2   : list[float] = []
-
+    sunspike_log: dict[int, list[float]] = {}
+    beta2_log: dict[int, list[float]] = {}
+    _buf_spikes: list[float] = []  # rolling window
+    _buf_betas2: list[float] = []
 
     tic = time.perf_counter()
     print(
@@ -158,18 +156,17 @@ def train_and_validate(
             train_data, train_alphas, train_dts, batch_size, shuffle=True
         ):
             loss = train_step(src, target, src_alphas, src_dts, dx, dy)
-            
 
             # ── Sun‑spike & β₂ per‑batch sample ─────────────────────────
             if (
                 track_diag
-                and getattr(optimizer, "_diag", False)          # diagnostics on
+                and getattr(optimizer, "_diag", False)  # diagnostics on
                 and hasattr(optimizer, "snapshot_sunspike_history")
             ):
                 spikes, betas = optimizer.snapshot_sunspike_history()
                 _buf_spikes.extend(spikes)
                 _buf_betas2.extend(betas)
-            
+
             total_train_loss += loss.item()
             num_train_batches += 1
             mx.eval(model, optimizer.state)
@@ -217,11 +214,11 @@ def train_and_validate(
         #    f"lr={optimizer.learning_rate:.5f} | "
         #    f"train={total_train_loss/num_train_batches:.3e} | "
         #    f"val={total_val_loss/num_val_batches:.3e}")
-        
+
         # ── commit & reset rolling buffers every *WINDOW* epochs ─────────
         if track_diag and (epoch + 1) % WINDOW == 0:
             sunspike_log[epoch + 1] = _buf_spikes[:]
-            beta2_log  [epoch + 1] = _buf_betas2[:]
+            beta2_log[epoch + 1] = _buf_betas2[:]
             _buf_spikes.clear()
             _buf_betas2.clear()
 
@@ -243,8 +240,7 @@ def train_and_validate(
     # ── flush final (partial) window, if any ───────────────────────────
     if track_diag and (_buf_spikes or _buf_betas2):
         sunspike_log[epochs] = _buf_spikes
-        beta2_log  [epochs] = _buf_betas2
-
+        beta2_log[epochs] = _buf_betas2
 
     toc = time.perf_counter()
     tpi = (toc - tic) / 60 / (epochs + 1 - start_epoch)

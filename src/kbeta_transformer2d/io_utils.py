@@ -3,10 +3,10 @@
 # ────────────────────────────────────────────────────────────────────────────
 from __future__ import annotations
 
-from pathlib import Path
 import json
 import os
 import pickle
+from pathlib import Path
 from typing import Any
 
 from .utils import compare_dict_states, compare_list_states
@@ -17,6 +17,7 @@ __all__ = [
     "save_model_and_optimizer",
     "load_model_and_optimizer",
 ]
+
 
 # --------------------------------------------------------------------------- #
 # 1) path helpers                                                             #
@@ -56,10 +57,10 @@ def setup_save_directories(
         run_name = f"{run_name}_restart_epoch_{restart_epoch}"
 
     paths = {
-        "save":      base_dir / f"Transformer_save_BeyondL_{run_name}",
-        "datasets":  base_dir / f"Datasets_save_BeyondL_{run_name}",
-        "heatmaps":  base_dir / f"Heatmaps_BeyondL_{run_name}",
-        "mse":       base_dir / f"InferenceMSE_BeyondL_{run_name}",
+        "save": base_dir / f"Transformer_save_BeyondL_{run_name}",
+        "datasets": base_dir / f"Datasets_save_BeyondL_{run_name}",
+        "heatmaps": base_dir / f"Heatmaps_BeyondL_{run_name}",
+        "mse": base_dir / f"InferenceMSE_BeyondL_{run_name}",
     }
     for p in paths.values():
         p.mkdir(parents=True, exist_ok=True)
@@ -105,15 +106,19 @@ def save_model_and_optimizer(
     """Dump model parameters, weights, optimizer state, RNG state and config."""
     dir_path.mkdir(parents=True, exist_ok=True)
 
-    model_file_path     = dir_path / f"{model_base_file_name}_epoch_{current_epoch}.pkl"
-    weights_file_path   = dir_path / f"{model_base_file_name}_weights_epoch_{current_epoch}.safetensors"
-    optimizer_file_path = dir_path / f"{optimizer_base_file_name}_epoch_{current_epoch}.pkl"
-    random_state_path   = dir_path / f"random_state_epoch_{current_epoch}.pkl"
-    config_file_path    = dir_path / f"{hyper_base_file_name}_epoch_{current_epoch}.json"
+    model_file_path = dir_path / f"{model_base_file_name}_epoch_{current_epoch}.pkl"
+    weights_file_path = (
+        dir_path / f"{model_base_file_name}_weights_epoch_{current_epoch}.safetensors"
+    )
+    optimizer_file_path = (
+        dir_path / f"{optimizer_base_file_name}_epoch_{current_epoch}.pkl"
+    )
+    random_state_path = dir_path / f"random_state_epoch_{current_epoch}.pkl"
+    config_file_path = dir_path / f"{hyper_base_file_name}_epoch_{current_epoch}.json"
 
     with model_file_path.open("wb") as fh:
         pickle.dump(model.parameters(), fh)
-    model.save_weights(str(weights_file_path))          # MLX wants str
+    model.save_weights(str(weights_file_path))  # MLX wants str
 
     with optimizer_file_path.open("wb") as fh:
         pickle.dump(optimizer.state, fh)
@@ -157,18 +162,25 @@ def load_model_and_optimizer(
     # ------------------------------------------------------------------ #
     dir_path = Path(dir_path).expanduser()
 
-    model_file      = dir_path / f"{model_base_file_name}_epoch_{checkpoint_epoch}.pkl"
-    weights_file    = dir_path / f"{model_base_file_name}_weights_epoch_{checkpoint_epoch}.safetensors"
-    optimizer_file  = dir_path / f"{optimizer_base_file_name}_epoch_{checkpoint_epoch}.pkl"
-    random_state_p  = dir_path / f"random_state_epoch_{checkpoint_epoch}.pkl"
-    config_file     = dir_path / f"{hyper_base_file_name}_epoch_{checkpoint_epoch}.json"
+    model_file = dir_path / f"{model_base_file_name}_epoch_{checkpoint_epoch}.pkl"
+    weights_file = (
+        dir_path
+        / f"{model_base_file_name}_weights_epoch_{checkpoint_epoch}.safetensors"
+    )
+    optimizer_file = (
+        dir_path / f"{optimizer_base_file_name}_epoch_{checkpoint_epoch}.pkl"
+    )
+    random_state_p = dir_path / f"random_state_epoch_{checkpoint_epoch}.pkl"
+    config_file = dir_path / f"{hyper_base_file_name}_epoch_{checkpoint_epoch}.json"
 
     # ------------------------------------------------------------------ #
     # 2) existence check                                                 #
     # ------------------------------------------------------------------ #
     required = [model_file, weights_file, optimizer_file, random_state_p, config_file]
     if not all(p.exists() for p in required):
-        print(f"[load_model_and_optimizer] no checkpoint found at epoch {checkpoint_epoch} – starting fresh.")
+        print(
+            f"[load_model_and_optimizer] no checkpoint found at epoch {checkpoint_epoch} – starting fresh."
+        )
         return 0, {}, mx_random_state, {}, {}
 
     # ------------------------------------------------------------------ #
@@ -192,7 +204,7 @@ def load_model_and_optimizer(
     # 4) (optional) compare with current in‑memory states                #
     # ------------------------------------------------------------------ #
     if comparison:
-        print(f"[load_model_and_optimizer] comparing checkpoint vs. in‑memory objects …")
+        print("[load_model_and_optimizer] comparing checkpoint vs. in‑memory objects …")
         if compare_dict_states(optimizer.state, loaded_optimizer_state, "optimizer"):
             print("   ✓ optimiser state matches")
         else:
@@ -208,7 +220,9 @@ def load_model_and_optimizer(
         else:
             print("   ✗ model parameters differ")
 
-    print(f"[load_model_and_optimizer] checkpoint epoch {checkpoint_epoch} loaded from {dir_path}")
+    print(
+        f"[load_model_and_optimizer] checkpoint epoch {checkpoint_epoch} loaded from {dir_path}"
+    )
 
     return (
         start_epoch,

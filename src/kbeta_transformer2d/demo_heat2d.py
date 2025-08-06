@@ -1,4 +1,3 @@
-
 """
 demo_heat2d.py – modular CLI entry‑point for the 2‑D heat‑diffusion Transformer
 Author : Stavros Kassinos  (Aug 2025)
@@ -96,17 +95,28 @@ def _parse_cli() -> argparse.Namespace:
     p.add_argument("--epochs", type=int)
     p.add_argument("--optimizer", choices=["adam95", "adam999", "kourkoutas"])
     p.add_argument("--kour_diagnostics", action="store_true")
-    p.add_argument("--collect_spikes", action="store_true",
-                   help="Collect per‑layer *Sun‑spike* /&nbsp;β₂ statistics for "
-                        "violin / density plots (implies --kour_diagnostics).")
+    p.add_argument(
+        "--collect_spikes",
+        action="store_true",
+        help="Collect per‑layer *Sun‑spike* /&nbsp;β₂ statistics for "
+        "violin / density plots (implies --kour_diagnostics).",
+    )
 
-    p.add_argument("--spike_window", type=int, metavar="N",
-                   help="Aggregate Sun‑spike / β₂ samples over N epochs "
-                        "before committing them (maps to tracking.window).")
+    p.add_argument(
+        "--spike_window",
+        type=int,
+        metavar="N",
+        help="Aggregate Sun‑spike / β₂ samples over N epochs "
+        "before committing them (maps to tracking.window).",
+    )
 
-    p.add_argument("--spike_stride", type=int, metavar="M",
-                   help="Show only every M‑th committed window in the violin / "
-                        "heat‑map plots (maps to tracking.plot_stride).")
+    p.add_argument(
+        "--spike_stride",
+        type=int,
+        metavar="M",
+        help="Show only every M‑th committed window in the violin / "
+        "heat‑map plots (maps to tracking.plot_stride).",
+    )
     p.add_argument("--viz", action="store_true")
 
     # free‑form KEY=VAL overrides
@@ -151,13 +161,13 @@ def _parse_cli() -> argparse.Namespace:
         key, val = pair.split("=", 1)
         fixed.append(f"{alias.get(key, key)}={val}")
     args.override = fixed
-    
+
     if args.collect_spikes and not args.kour_diagnostics:
         print("[info] --collect_spikes implies --kour_diagnostics → auto‑enabled")
         args.kour_diagnostics = True
         # make sure the override list reflects the change ⬇︎
         args.override.append("optimizer.kour_diagnostics=true")
-    
+
     return args
 
 
@@ -241,6 +251,7 @@ from .utils import (
     print_fresh_run_config,
 )
 
+
 # ---------------------------------------------------------------------------#
 # 5) top‑level run director                                                  #
 # ---------------------------------------------------------------------------#
@@ -267,8 +278,10 @@ def run_from_config(cfg: dict[str, Any]) -> None:
     base_out = Path(out_root).expanduser().resolve() if out_root else Path.cwd()
 
     # ----- run label ------------------------------------------------------
-    run_name = f"{cfg['run_label']}_{cfg['boundary_segment_strategy']}_" \
-               f"{cfg['model_params']['mask_type']}"
+    run_name = (
+        f"{cfg['run_label']}_{cfg['boundary_segment_strategy']}_"
+        f"{cfg['model_params']['mask_type']}"
+    )
 
     # ---------------------------------------------------------------------
     # ① dataset creation / loading
@@ -385,7 +398,7 @@ def run_from_config(cfg: dict[str, Any]) -> None:
         start_epoch = 0
         if cfg.get("configuration_dump", False):
             print_fresh_run_config(cfg)
-            
+
     # ── choose the save interval based on save_checkpoints ──────────────
     if config.get("save_checkpoints", True):
         # honour user‑provided value or fall back to 10
@@ -393,13 +406,14 @@ def run_from_config(cfg: dict[str, Any]) -> None:
     else:
         # ‼️ *None* marks “do not checkpoint during training”
         config["save_interval"] = None
-            
 
     # ---------------------------------------------------------------------
     # ⑤ compile train / eval closures
     # ---------------------------------------------------------------------
     eval_cfg = cfg.setdefault("eval", {})
-    n_replace = eval_cfg.get("n_replace", 5)
+    n_replace = eval_cfg.get(
+        "n_replace", 5
+    )  # Currently unused, reserved for future dev.
     n_initial = eval_cfg.get("n_initial_frames", 5)
 
     train_step, eval_step, state = make_train_and_eval_steps(
@@ -417,7 +431,7 @@ def run_from_config(cfg: dict[str, Any]) -> None:
     print("*** starting training ***")
 
     model.train()
-    
+
     sunspike_dict, beta2_dict = train_and_validate(
         model,
         optimizer,
@@ -449,45 +463,54 @@ def run_from_config(cfg: dict[str, Any]) -> None:
     io_and_plots = cfg.get("io_and_plots", {})
     plots_cfg = io_and_plots.get("plots", {})
 
-    
     # ——————————————————————————————————————————————
     # Diagnostics → violin / heat‑maps (Kour only)
     # ——————————————————————————————————————————————
     track_cfg = cfg.get("tracking", {})
-    collect   = track_cfg.get("collect_spikes", False)
-    is_kour   = cfg["optimizer"]["name"].lower().startswith("kour")
-    
+    collect = track_cfg.get("collect_spikes", False)
+    is_kour = cfg["optimizer"]["name"].lower().startswith("kour")
+
     # Have we actually accumulated *any* values?
-    has_data  = any(len(v) for v in sunspike_dict.values())
-    
+    has_data = any(len(v) for v in sunspike_dict.values())
+
     if collect and is_kour and has_data:
-        window      = int(track_cfg.get("window", 500))
+        window = int(track_cfg.get("window", 500))
         plot_stride = int(track_cfg.get("plot_stride", 10 * window))
-    
+
         # ── violin plots ────────────────────────────────────────────────
         save_distribution_violin_plot(
-            sunspike_dict, sample_every=plot_stride,
-            label="Sunspike", outdir=frames_dir / "sunspike_violin"
+            sunspike_dict,
+            sample_every=plot_stride,
+            label="Sunspike",
+            outdir=frames_dir / "sunspike_violin",
         )
         save_distribution_violin_plot(
-            beta2_dict, sample_every=plot_stride,
-            label="Beta2",    outdir=frames_dir / "beta2_violin"
+            beta2_dict,
+            sample_every=plot_stride,
+            label="Beta2",
+            outdir=frames_dir / "beta2_violin",
         )
-    
+
         # ── density heat‑maps ───────────────────────────────────────────
         save_distribution_density_heatmap(
-            sunspike_dict, label="Sunspike",
-            num_bins=20, value_range=(0.0, 1.0),
+            sunspike_dict,
+            label="Sunspike",
+            num_bins=20,
+            value_range=(0.0, 1.0),
             outdir=frames_dir / "sunspike_density",
         )
         save_distribution_density_heatmap(
-            beta2_dict, label="Beta2",
-            num_bins=20, value_range=(0.88, 1.0),
+            beta2_dict,
+            label="Beta2",
+            num_bins=20,
+            value_range=(0.88, 1.0),
             outdir=frames_dir / "beta2_density",
         )
     else:
-        print("[plots] Skipped sun‑spike / β₂ plots — "
-            f"collect={collect}, is_kour={is_kour}, has_data={has_data}")
+        print(
+            "[plots] Skipped sun‑spike / β₂ plots — "
+            f"collect={collect}, is_kour={is_kour}, has_data={has_data}"
+        )
 
     # non‑autoregressive baseline
     average_mse = evaluate_model_block_sequence(
