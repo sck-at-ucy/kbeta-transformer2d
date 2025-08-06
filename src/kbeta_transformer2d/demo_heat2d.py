@@ -396,8 +396,7 @@ def run_from_config(cfg: dict[str, Any]) -> None:
     # ⑥ training
     # ---------------------------------------------------------------------
     print("*** starting training ***")
-    sunspike_dict: dict[int, list[float]] = {}
-    beta2_dict: dict[int, list[float]] = {}
+
     model.train()
     
     sunspike_dict, betas2_dict = train_and_validate(
@@ -430,8 +429,10 @@ def run_from_config(cfg: dict[str, Any]) -> None:
     # ---------------------------------------------------------------------
     io_and_plots = cfg.get("io_and_plots", {})
     plots_cfg = io_and_plots.get("plots", {})
-    print(sunspike_dict)
-    print(beta2_dict)
+
+    # (optional) quick console sanity
+    print(f"[tracking] epochs with data  →  Sun‑spike:{list(sunspike_dict)}"
+          f"  |  β₂:{list(beta2_dict)}")
 
     # violin & density
     save_distribution_violin_plot(
