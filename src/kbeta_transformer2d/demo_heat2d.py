@@ -411,7 +411,7 @@ def run_from_config(cfg: dict[str, Any]) -> None:
     # ⑤ compile train / eval closures
     # ---------------------------------------------------------------------
     eval_cfg = cfg.setdefault("eval", {})
-    n_replace = eval_cfg.get(
+    n_replace = eval_cfg.get( # noqa: F841
         "n_replace", 5
     )  # Currently unused, reserved for future dev. # noqa: F841
     n_initial = eval_cfg.get("n_initial_frames", 5)
