@@ -10,7 +10,6 @@ import mlx.core as mx
 import numpy as np
 
 # ── all the functions that were purely data‑related ───────────────────────
-# (shortened here – copy the full bodies from your big file)
 __all__ = [
     "initialize_geometry_and_bcs",
     "generate_datasets",
@@ -160,7 +159,7 @@ def generate_bcs_and_split_2D(
         arrs = [a[indices] for a in arrs]
     else:
         arrs = map(mx.random.permutation, arrs)
-        # Alternative GPT form: arrs_comprehension = [mx.random.permutation(a) for a in arrs]
+        # Alternative form: arrs_comprehension = [mx.random.permutation(a) for a in arrs]
 
     left_bcs, right_bcs, top_bcs, bottom_bcs, alphas = arrs
 

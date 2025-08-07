@@ -1,6 +1,6 @@
 # transformer/plot_utils.py
 # ─────────────────────────────────────────────────────────────────────────────
-# High‑level plotting utilities for the cylindrical‑PINN demo
+# High‑level plotting utilities for the transformer2d demo
 # ─────────────────────────────────────────────────────────────────────────────
 
 import os

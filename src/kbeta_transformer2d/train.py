@@ -115,17 +115,6 @@ def train_and_validate(
         The function performs training and validation and does not return any value. It prints
         training and validation losses and saves the model and optimizer states at regular intervals.
     """
-    # if start_epoch > 1:   # if this is a reload run, do two warm-up iterations first
-    #    for epoch in range(start_epoch-2, start_epoch):
-    #        optimizer.learning_rate = 0
-    #        for src, target, src_alphas, src_dts in data_loader_2D(train_data, train_alphas, train_dts, batch_size,
-    #                                                               shuffle=False):
-    #            _, _ = train_step(src, target, src_alphas, src_dts, dx, dy)
-    #            mx.eval(state)
-
-    # Set learning rate to match the reload epoch (caution: filenames are based on epoch+1)
-    # optimizer.learning_rate = get_learning_rate_for_epoch(start_epoch, learning_rate_schedule)
-
     # ------------------------------------------------------------
     #  light‑weight per‑epoch statistics (Sun‑spike & β₂)
     # ------------------------------------------------------------
@@ -208,13 +197,6 @@ def train_and_validate(
                 f"upd_norm_max={diags['diag_upd_norm_max']:.1e} | "
                 f"v̂_max={diags['diag_vhat_max']:.1e}"
             )
-        # else:
-        ## plain Adam
-        # print(f"Epoch {epoch+1:4d} | "
-        #    f"lr={optimizer.learning_rate:.5f} | "
-        #    f"train={total_train_loss/num_train_batches:.3e} | "
-        #    f"val={total_val_loss/num_val_batches:.3e}")
-
         # ── commit & reset rolling buffers every *WINDOW* epochs ─────────
         if track_diag and (epoch + 1) % WINDOW == 0:
             sunspike_log[epoch + 1] = _buf_spikes[:]

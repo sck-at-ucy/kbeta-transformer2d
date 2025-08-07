@@ -413,7 +413,7 @@ def run_from_config(cfg: dict[str, Any]) -> None:
     eval_cfg = cfg.setdefault("eval", {})
     n_replace = eval_cfg.get(
         "n_replace", 5
-    )  # Currently unused, reserved for future dev.
+    )  # Currently unused, reserved for future dev. # noqa: F841
     n_initial = eval_cfg.get("n_initial_frames", 5)
 
     train_step, eval_step, state = make_train_and_eval_steps(
