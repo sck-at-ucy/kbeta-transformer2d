@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kbeta-transformer2d"
-version = "0.1.0a4"
+version = "0.0.0a1"
 description = "2‑D heat‑diffusion Transformer demo for the Kourkoutas‑β optimiser"
 authors = [{name = "Stavros Kassinos", email = "kassinos.stavros@ucy.ac.cy"}]
 readme = "README.md"
@@ -18,7 +18,7 @@ dependencies = [
     "matplotlib>=3.7",      # for plot_utils
     "seaborn>=0.13",        # violin / density plots
     "pandas>=2.0",          # violin‑plot helper
-    "kbeta>=0.0.0a0",        # kourkoutas optimizer
+    "kbeta >=1.0.1a0,<2",   # kourkoutas optimizer
 ]
 
 [project.optional-dependencies]
