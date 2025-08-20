@@ -22,41 +22,34 @@ model_params:
   mlp_dim: 256
   embed_dim: 512
   mask_type: block
+  
+# Explicit LR schedule (used in paper runs)
 learning_rate_schedule:
   5: 1.0e-3
   30: 5.0e-4
   40: 1.0e-4
   60: 1.0e-5
   120: 1.0e-6
-scale_schedule:
-  0:   0.0
-  10:  0.05
-  20:  0.0
-  30:  0.05
-  40:  0.0
-  50:  0.01
-  60:  0.0
-  70:  0.005
-  80:  0.0
-  90:  0.0001
-  100: 0.0
-  110: 0.00001
-  120: 0.0
+  
 run_label: run_papercase_Kourkoutasb
 boundary_segment_strategy: base_case
 training_samples: 4000
 start_from_scratch: true
+
 checkpoint_epoch: null
 current_epoch: null
+
 save_checkpoints: false
 save_interval: 30
 compare_current_loaded: false
 configuration_dump: false
+
 io_and_plots:
   plots:
     movie_frames: false
     num_examples: 2
   model_saving: true
+
 # ─────────────────────────────────────────────────────────
 # evaluation‑specific settings
 eval:

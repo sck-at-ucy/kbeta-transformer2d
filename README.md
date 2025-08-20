@@ -17,19 +17,20 @@
 
 ---
 
-## Table of Contents
-1. [Why a 2‑D Transformer?](#why-a-2d-transformer)
+## Table of Contents
+1. [Why a 2-D Transformer?](#why-a-2d-transformer)
 2. [Model highlights](#model-highlights)
 3. [Project layout](#project-layout)
 4. [Installation](#installation)
 5. [Quick start](#quick-start)
-6. [Command‑line interface (CLI)](#command-line-interface-cli)
+6. [Command-line interface (CLI)](#command-line-interface-cli)
 7. [Training from scratch](#training-from-scratch)
 8. [Using your own datasets](#using-your-own-datasets)
-9. [Tests & linting](#tests--linting)
-10. [Relation to Kourkoutas‑β](#relation-to-kourkoutas-β)
-11. [Citation](#citation)
-12. [License](#license)
+9. [Tests & linting](#tests--linting)
+10. [Relation to Kourkoutas-β](#relation-to-kourkoutas-β)
+11. [Learning-rate schedule behaviour](#learning-rate-schedule-behaviour-️)
+12. [Citation](#citation)
+13. [License](#license)
 
 ---
 
@@ -156,7 +157,7 @@ python -m kbeta_transformer2d.demo_heat2d heat2d.yml --epochs=5 --optimizer=adam
 
 # same as above but change mesh size and disable plotting
 python -m kbeta_transformer2d.demo_heat2d heat2d.yml \
-  --override geometry.dx=0.008 geometry.dy=0.008 viz.enabled=false
+  --override geometry.dx=0.08 geometry.dy=0.08 viz.enabled=false
 
 # run with the *packaged* default config (no file in cwd needed)
 python - <<'PY'
@@ -166,29 +167,44 @@ subprocess.run(['python','-m','kbeta_transformer2d.demo_heat2d', str(cfg), '--ep
 PY
 ```
 
-### Default configuration (excerpt)
+### Example configuration (excerpt)
 ```yaml
-seed: 30
+seed: 0
 geometry:
-  rod_length: 0.05       # [m]
-  rod_width:  0.05
-  dx: 0.002
-  dy: 0.002
+  rod_length: 1.0
+  rod_width: 1.0
+  dx: 0.04
+  dy: 0.04
+boundary_conditions:
+  left_limits: [0, 1]
+  right_limits: [0, 1]
+  top_limits: [0, 1]
+  bottom_limits: [0, 0.1]
+thermal_diffusivity:
+  alpha_limits: [0.01, 0.1]
 model_params:
-  time_steps: 1200
-  num_heads: 8
-  num_encoder_layers: 4
-  mlp_dim: 1024
+  start_predicting_from: 5
+  batch_size: 4
+  epochs: 10
+  time_steps: 401
+  num_heads: 16
+  num_encoder_layers: 24
+  mlp_dim: 256
   embed_dim: 512
-  batch_size: 32
-  mask_type: causal      # (causal | block)
+  mask_type: block
+learning_rate_schedule:
+  5: 1.0e-3
+  30: 5.0e-4
+  40: 1.0e-4
+  60: 1.0e-5
+ 120: 1.0e-6 
 optimizer:
   name: adam999
   init_lr: 1.0e-3
   target_lr: 1.0e-5
   ramp_steps: 60000
 tracking:
-  collect_spikes: false     # set true to gather Sun‑spike / β₂
+  collect_spikes: false     # set true to gather Sun‑spike / β₂ (if using kbeta)
   window: 500               # epochs per accumulation window
   plot_stride: 5000         # violin sampling stride (defaults to 10×window)
 storage:
@@ -198,7 +214,13 @@ io_and_plots:
 save_checkpoints: true      # periodic checkpoints during training
 save_interval: 10           # only used if save_checkpoints=true
 ```
-*(see `configs/heat2d.yml` for the full list)*
+*(see `configs/heat2d.yml` and configs/paper.yml for the full list)*
+
+---
+## Learning‑rate schedule behaviour ⚡️
+
+* If a `learning_rate_schedule` block is present in your YAML config, the model will **use that explicit step schedule** (this is how the published paper runs were done).  
+* If no `learning_rate_schedule` is defined, the code will **fall back to a cosine schedule** controlled by `init_lr`, `target_lr`, and `ramp_steps` under the `optimizer` block.
 
 ---
 ### YAML quick‑reference — common pitfalls 🔍

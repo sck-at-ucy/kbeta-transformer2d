@@ -28,20 +28,6 @@ learning_rate_schedule:
   40: 1.0e-4
   60: 1.0e-5
   120: 1.0e-6
-scale_schedule:
-  0:   0.0
-  10:  0.05
-  20:  0.0
-  30:  0.05
-  40:  0.0
-  50:  0.01
-  60:  0.0
-  70:  0.005
-  80:  0.0
-  90:  0.0001
-  100: 0.0
-  110: 0.00001
-  120: 0.0
 run_label: run_permute_quant_builtin_rope_Kourkoub1
 boundary_segment_strategy: base_case
 training_samples: 4000
@@ -54,7 +40,7 @@ configuration_dump: false
 io_and_plots:
   plots:
     movie_frames: false
-    num_examples: 20
+    num_examples: 2
   model_saving: true
 # ─────────────────────────────────────────────────────────
 # evaluation‑specific settings
