@@ -13,8 +13,7 @@
 > Published as [arXiv:2508.12996](http://arxiv.org/abs/2508.12996).
 >
 > This repository contains the full **2‑D data‑driven Transformer** workload that accompanies the optimiser  
-> (see the separate [`kbeta`](https://github.com/sck-at-ucy/kbeta) repo), plus lightweight utilities for training,  
-> evaluation and visualisation.
+> (see the separate [`kbeta`](https://github.com/sck-at-ucy/kbeta) repo), plus lightweight utilities for training, evaluation and visualisation.
 
 ---
 
