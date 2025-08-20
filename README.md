@@ -1,12 +1,12 @@
-[![Test dev](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg?job=test-dev)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml)
-[![Test wheel](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg?job=test-wheel)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml)
+[![Test (dev install)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg?job=test-dev)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml)
+[![Test (wheel install)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg?job=test-wheel)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml)
+
 <p align="center">
   <img src="assets/MLX_Kourkoutas.png" width="300"/>
   <img src="assets/t_2dframes.png" width="300"/>
 </p>
 
-
-# kbeta‑transformer2d – *2‑D Heat‑Diffusion Transformer trained with Kourkoutas‑β*  🌞🦎🚀📈
+# kbeta-transformer2d – *2-D Heat-Diffusion Transformer trained with Kourkoutas-β*  🌞🦎🚀📈
 
 > **Research companion code for the upcoming paper**  
 > “Kourkoutas‑β – Soft‑max Momentum with Adaptive Variance for Mesh‑Accelerated Deep Learning.”  
