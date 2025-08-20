@@ -153,19 +153,27 @@ python -m kbeta_transformer2d.demo_heat2d <CONFIG.yml> [flags]
 ### Examples
 ```bash
 # train 5 epochs with vanilla Adam‑(0.9,0.95)
-python -m kbeta_transformer2d.demo_heat2d heat2d.yml --epochs=5 --optimizer=adam95
+python -m kbeta_transformer2d.demo_heat2d heat2d.yml --epochs=5 --optimizer=adam95 --override storage.outdir="./OUTPUTS/run1"
 
 # same as above but change mesh size and disable plotting
 python -m kbeta_transformer2d.demo_heat2d heat2d.yml \
-  --override geometry.dx=0.08 geometry.dy=0.08 viz.enabled=false
+  --override geometry.dx=0.08 geometry.dy=0.08 viz.enabled=false storage.outdir="./OUTPUTS/run2"
 
 # run with the *packaged* default config (no file in cwd needed)
+```bash
 python - <<'PY'
 import subprocess, importlib.resources as res
-cfg = res.files('kbeta_transformer2d.configs') / 'heat2d.yml'
-subprocess.run(['python','-m','kbeta_transformer2d.demo_heat2d', str(cfg), '--epochs=1'])
+cfg = res.files("kbeta_transformer2d.configs") / "heat2d.yml"
+subprocess.run([
+    "python", "-m", "kbeta_transformer2d.demo_heat2d",
+    str(cfg),
+    "--epochs=1",
+    "--override", "storage.outdir=./OUTPUTS/run3"
+])
 PY
 ```
+
+**Tip:** Use --override storage.outdir=... to redirect checkpoints/plots to a dedicated folder instead of cluttering the repo root.
 
 ### Example configuration (excerpt)
 ```yaml
