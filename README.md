@@ -1,7 +1,4 @@
-[![Test (dev install)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg?branch=main&job=test-dev)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml)
-[![Test (wheel install)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg?branch=main&job=test-wheel)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml)
-[![PyPI version](https://badge.fury.io/py/kbeta-transformer2d.svg)](https://pypi.org/project/kbeta-transformer2d/)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.16911539.svg)](https://doi.org/10.5281/zenodo.16911539)
+[![CI: dev install](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg?branch=main&job=test-dev)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml) [![CI: wheel install](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg?branch=main&job=test-wheel)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml) [![PyPI version](https://badge.fury.io/py/kbeta-transformer2d.svg)](https://pypi.org/project/kbeta-transformer2d/) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.16911539.svg)](https://doi.org/10.5281/zenodo.16911539)
 
 <p align="center">
   <img src="assets/MLX_Kourkoutas.png" width="300"/>
