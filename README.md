@@ -329,16 +329,16 @@ If you use this work, please cite both the **paper** and the **software archive*
 }
 ```
 
-**Software (Zenodo archive, once minted)**  
+**Software (Zenodo archive)**  
 ```bibtex
 @software{kassinos2025transformer2d,
   author       = {Stavros Kassinos},
   title        = {kbeta-transformer2d: 2-D Heat-Diffusion Transformer – Companion Code},
-  year         = 2025,
+  year         = {2025},
   publisher    = {Zenodo},
-  version      = {0.1.0},
-  doi          = {10.5281/zenodo.xxxxxxx},
-  url          = {https://doi.org/10.5281/zenodo.xxxxxxx}
+  version      = {1.0.0},
+  doi          = {10.5281/zenodo.16911539},
+  url          = {https://doi.org/10.5281/zenodo.16911539}
 }
 ```
 
