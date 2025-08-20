@@ -153,11 +153,15 @@ python -m kbeta_transformer2d.demo_heat2d <CONFIG.yml> [flags]
 ### Examples
 ```bash
 # train 5 epochs with vanilla Adam‑(0.9,0.95)
-python -m kbeta_transformer2d.demo_heat2d heat2d.yml --epochs=5 --optimizer=adam95 --override storage.outdir="./OUTPUTS/run1"
+python -m kbeta_transformer2d.demo_heat2d heat2d.yml \
+   --epochs=5 \
+   --optimizer=adam95 \
+   --override storage.outdir="./OUTPUTS/run1"
 
 # same as above but change mesh size and disable plotting
 python -m kbeta_transformer2d.demo_heat2d heat2d.yml \
-  --override geometry.dx=0.08 geometry.dy=0.08 viz.enabled=false storage.outdir="./OUTPUTS/run2"
+  --override geometry.dx=0.08 geometry.dy=0.08 \
+  --override viz.enabled=false storage.outdir="./OUTPUTS/run2"
 
 # run with the *packaged* default config (no file in cwd needed)
 ```bash
