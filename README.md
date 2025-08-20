@@ -28,7 +28,7 @@
 8. [Using your own datasets](#using-your-own-datasets)
 9. [Tests & linting](#tests--linting)
 10. [Relation to Kourkoutas-β](#relation-to-kourkoutas-β)
-11. [Learning-rate schedule behaviour](#learning-rate-schedule-behaviour-️)
+11. [Learning-rate schedule behaviour](#learning-rate-schedule-behaviour)
 12. [Citation](#citation)
 13. [License](#license)
 
@@ -217,7 +217,7 @@ save_interval: 10           # only used if save_checkpoints=true
 *(see `configs/heat2d.yml` and configs/paper.yml for the full list)*
 
 ---
-## Learning‑rate schedule behaviour ⚡️
+## Learning‑rate schedule behaviour
 
 * If a `learning_rate_schedule` block is present in your YAML config, the model will **use that explicit step schedule** (this is how the published paper runs were done).  
 * If no `learning_rate_schedule` is defined, the code will **fall back to a cosine schedule** controlled by `init_lr`, `target_lr`, and `ramp_steps` under the `optimizer` block.
