@@ -26,13 +26,5 @@ jobs:
       - run: python -m pip install --upgrade pip build
       - run: python -m build
       - run: pip install dist/*.whl
-      # Smoke test CLI with packaged config (epochs=0, so no heavy training)
-      - run: |
-          python - <<'PY'
-          import subprocess, importlib.resources as res
-          cfg = res.files("kbeta_transformer2d.configs") / "quick_test.yml"
-          subprocess.run([
-              "python", "-m", "kbeta_transformer2d.demo_heat2d",
-              str(cfg), "--epochs=0"
-          ], check=True)
-          PY
+      # Only check import/version, avoid GPU demo
+      - run: python -c "import kbeta_transformer2d as t2d; print('Version:', t2d.__version__)"
