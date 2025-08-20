@@ -1,0 +1,34 @@
+# ───── Include essential metadata ─────
+include README.md
+include LICENSE
+include pyproject.toml
+
+# ───── Include configs and assets ─────
+recursive-include src/kbeta_transformer2d/configs *.yml
+recursive-include assets *.png
+include src/kbeta_transformer2d/py.typed
+
+# ───── Exclude unnecessary files ─────
+exclude .gitignore
+exclude .pre-commit-config.yaml
+
+# Build / cache / venv artefacts
+recursive-exclude build *
+recursive-exclude dist *
+recursive-exclude *.egg-info *
+recursive-exclude __pycache__ *
+recursive-exclude .mypy_cache *
+recursive-exclude .pytest_cache *
+recursive-exclude .ruff_cache *
+
+# Training data, logs, outputs
+recursive-exclude data *
+recursive-exclude OUTPUTS *
+recursive-exclude logs_raw *
+exclude *.zip
+exclude *.txt
+exclude *.npz
+exclude *.ckpt
+exclude *.safetensors
+exclude *.h5
+exclude *.pth

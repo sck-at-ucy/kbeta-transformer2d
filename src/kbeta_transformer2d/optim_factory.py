@@ -11,7 +11,7 @@ from typing import Any, Callable
 # ‑‑ third‑party -------------------------------------------
 import mlx.core as mx
 import mlx.optimizers as optim
-from kbeta.optim import KourkoutasSoftmaxFlex
+from kbeta.optim import KourkoutasBeta
 
 # ‑‑ local --------------------------------------------------
 from .model import HeatDiffusionModel
@@ -100,7 +100,7 @@ def initialize_model_and_optimizer(
             """Stable bucket for per‑layer statistics in Kourkoutas‑β."""
             return param_to_path.get(param, "unknown")
 
-        optimizer = KourkoutasSoftmaxFlex(
+        optimizer = KourkoutasBeta(
             learning_rate=1e-3,
             beta1=opt_cfg.get("beta1", 0.90),
             beta2_max=opt_cfg.get("beta2_max", 0.999),
@@ -123,7 +123,7 @@ def initialize_model_and_optimizer(
             f"Unknown optimiser '{name}'. Valid: adam95 | adam999 | kourkoutas"
         )
 
-    if isinstance(optimizer, KourkoutasSoftmaxFlex):
+    if isinstance(optimizer, KourkoutasBeta):
         _pretty_print_kour(optimizer)  # dedicated formatter
     else:  # plain Adam
         _pretty_print_adam(name.upper(), optimizer)  # reuse helper

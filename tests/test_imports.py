@@ -11,8 +11,8 @@ def test_forward():
         seq_len=4,
         num_heads=2,
         num_encoder_layers=1,
-        mlp_dim=64,
-        embed_dim=128,
+        mlp_dim=256,
+        embed_dim=512,
         start_predicting_from=0,
         mask_type="block",
     )

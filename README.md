@@ -240,7 +240,7 @@ mypy src
 
 ## Relation to Kourkoutas‑β
 This repo **uses** the optimiser from `kbeta`; it does *not* re‑implement it.  
-`optim_factory.py` wires `KourkoutasSoftmaxFlex` into the training loop.
+`optim_factory.py` wires `KourkoutasBeta` into the training loop.
 
 ---
 ### Further Reading & Related Resources 📚
@@ -249,24 +249,41 @@ This repo **uses** the optimiser from `kbeta`; it does *not* re‑implement it.
 |----------|--------------------------------------------------------------|
 | **MLX Beyond Language (repo)**<br>https://github.com/sck-at-ucy/MLX_BeyondLanguage | Companion project that demonstrates how to scale MLX Transformer workloads *beyond* conventional language‑model settings (e.g. vision & physics). Provides many of the coding conventions, dataset helpers and plotting utilities reused here. |
 | **MLX framework (Apple)**<br>https://github.com/ml-explore/mlx | The underlying tensor/NN library that powers both Kourkoutas‑β *and* the 2‑D Transformer. Understanding MLX’s compile/runtime model explains why adaptive optimisers like Kourkoutas‑β can hit full Metal GPU speed without custom CUDA kernels. |
-| **Article: *Soft‑max Momentum with Adaptive Variance…***<br>https://www.sciencedirect.com/science/article/pii/S2590123025009478 | The forthcoming paper describing Kourkoutas‑β in detail—mathematical derivation, convergence proofs and ablation studies. Read this to see why β₂ must be a dynamic *distribution* rather than a constant 0.999. |
-| **kbeta (core optimiser)**<br>https://github.com/sck-at-ucy/kbeta | Stand‑alone Python package implementing Kourkoutas‑β. `kbeta_transformer2d` imports `KourkoutasSoftmaxFlex` from *this* repo; all optimiser‑level issues/PRs belong there. |
+| **Article: *Kourkoutas‑β: A Sunspike‑Driven Adam Optimizer with Desert Flair***<br>https://arxiv.org/abs/2508.12996 | The forthcoming paper describing Kourkoutas‑β in detail—mathematical derivation, convergence proofs and ablation studies. Read this to see why β₂ must be a dynamic *distribution* rather than a constant 0.999. |
+| **kbeta (core optimiser)**<br>https://github.com/sck-at-ucy/kbeta | Stand‑alone Python package implementing Kourkoutas‑β. `kbeta-transformer2d` depends on `KourkoutasBeta` from the core repo; all optimiser‑level issues/PRs belong there. |
 | **kbeta‑pinn3d (PINN benchmark)**<br>https://github.com/sck-at-ucy/kbeta-pinn3d | 3‑D Physics‑Informed Neural Network (PINN) workload that **collects β₂ “spike” diagnostics** during training. Useful if you want to compare how Kourkoutas‑β behaves on PDE‑constrained training vs. the fully data‑driven 2‑D Transformer shown here. |
 
 ---
 
+
 ## Citation
+
+If you use this work, please cite both the **paper** and the **software archive**:
+
+**Paper (arXiv preprint)**  
 ```bibtex
-@misc{Kassinos2025Transformer2D,
-  title        = {Data‑Driven 2‑D Heat‑Diffusion Transformer – Companion Code},
-  author       = {Stavros Kassinos and collaborators},
-  year         = {2025},
-  howpublished = {GitHub},
-  note         = {\url{https://github.com/sck-at-ucy/kbeta-transformer2d}}
+@article{Kassinos2025Kourkoutas,
+  title   = {Kourkoutas-β: A Sunspike-Driven Adam Optimizer with Desert Flair},
+  author  = {Stavros Kassinos},
+  journal = {arXiv preprint arXiv:2508.12996},
+  year    = {2025},
+  url     = {https://arxiv.org/abs/2508.12996}
 }
 ```
 
----
+**Software (Zenodo archive, once minted)**  
+```bibtex
+@software{kassinos2025transformer2d,
+  author       = {Stavros Kassinos},
+  title        = {kbeta-transformer2d: 2-D Heat-Diffusion Transformer – Companion Code},
+  year         = 2025,
+  publisher    = {Zenodo},
+  version      = {0.1.0},
+  doi          = {10.5281/zenodo.xxxxxxx},
+  url          = {https://doi.org/10.5281/zenodo.xxxxxxx}
+}
+```
+
 
 ## License
 MIT.  See [`LICENSE`](LICENSE) for the full text.

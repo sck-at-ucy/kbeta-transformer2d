@@ -1,24 +1,56 @@
-
-# macOS
-.DS_Store
-# build artefacts
+# ───── Build / dist artefacts ─────
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
 build/
 dist/
 *.egg-info/
 
-# ── macOS -------------------------------------------------
+# ───── OS / editor cruft ─────
 .DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
 
-# ── Python / tooling -------------------------------------
+# ───── Virtual environments ─────
 .venv/
+venv/
+env/
+*.env/
+*.venv/
+.venv*/
+tests/.venv/
+
+# ───── Python artefacts ─────
 __pycache__/
-*.egg-info/
+*.pyc
+*.py[cod]
+*.pyo
+*.so
+*.dylib
 
-# ── Build artefacts --------------------------------------
-build/
-dist/
+# ───── Apple MLX / Metal binaries ─────
+*.metallib
 
-# ── Local scratch files ----------------------------------
-pyproject.txt
+# ───── Large tensor / checkpoint files ─────
+*.safetensors
+*.ckpt
+*.h5
+*.pth
+*.npz
 
+# ───── Generated outputs & datasets ─────
+**/OUTPUTS/
+**/results/
+**/datasets/
+logs_raw/
 
+# ───── Data files (avoid shipping heavy corpora) ─────
+data/
+*.zip
+*.txt
+
+# ───── Jupyter & docs ─────
+.ipynb_checkpoints/
+site/
