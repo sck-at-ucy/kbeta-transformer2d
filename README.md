@@ -1,7 +1,6 @@
 [![Test (dev install)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg?branch=main&job=test-dev&label=dev-install)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml)
 [![Test (wheel install)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg?branch=main&job=test-wheel&label=wheel-install)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml)
 
-
 <p align="center">
   <img src="assets/MLX_Kourkoutas.png" width="300"/>
   <img src="assets/t_2dframes.png" width="300"/>
