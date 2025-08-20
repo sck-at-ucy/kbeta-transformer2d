@@ -42,22 +42,22 @@
 ---
 
 ## Model highlights
-*(what’s special about HeatDiffusion‑Transformer‑2D)*
+*(what’s special about HeatDiffusion-Transformer-2D)*
 
-* **Patch‑wise attention on 2‑D grids**  
-  The input tensor is reshaped into *(T × H × W)* patches, letting the model treat every spatial location symmetrically while still exploiting MX‑GPU tensor cores efficiently.
+* **Patch-wise attention on 2-D grids**  
+  The input tensor is reshaped into *(T × H × W)* patches, letting the model treat every spatial location symmetrically while still exploiting MX-GPU tensor cores efficiently.
 
 * **Dual masking modes**  
-  *Causal* masks give an autoregressive model useful for long‑horizon rollout tests; *block* masks allow full‑context training when future frames are available.
+  *Causal* masks give an autoregressive model useful for long-horizon rollout tests; *block* masks allow full-context training when future frames are available.
 
 * **RoPE (Rotary Positional Encoding) in the time dimension**  
   A single line swap lets you switch between vanilla sinusoidal encodings and RoPE, which markedly improves extrapolation beyond the training window.
 
 * **Activation quantisation ready**  
-  All dense / conv projections are implemented with `mlx.nn.quantize_lin`, giving you 8‑bit weights on Apple Silicon **without** code changes.
+  All dense / conv projections are implemented with `mlx.nn.quantize_lin`, giving you 8-bit weights on Apple Silicon **without** code changes.
 
-* **Tiny footprint – 2.3 M parameters**  
-  Fits comfortably on a single M‑series GPU core at batch‑size 32, even in FP16.
+* **Paper configuration ≈ 32 M parameters**  
+  With 24 encoder layers, 16 heads, `embed_dim=512`, and `mlp_dim=256`, the model has about **32 M trainable parameters**—large enough to stress-test optimisers, yet compact enough to train on a single Mac Studio GPU (batch size 4, grid 25 × 25 × 401).
 
 * **One‑liner optimiser swap**  
   The model inherits its optimiser object, so comparing Adam vs Kourkoutas‑β is literally *one* YAML entry.
