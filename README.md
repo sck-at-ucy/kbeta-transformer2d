@@ -1,5 +1,5 @@
-[![Test (dev install)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg?branch=main&job=test-dev&label=dev-install)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml)
-[![Test (wheel install)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg?branch=main&job=test-wheel&label=wheel-install)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml)
+[![Test (dev install)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg?branch=main&job=test-dev)](...)
+[![Test (wheel install)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg?branch=main&job=test-wheel)](...)
 
 
 <p align="center">
