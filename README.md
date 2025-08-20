@@ -23,7 +23,7 @@
 3. [Project layout](#project-layout)
 4. [Installation](#installation)
 5. [Quick start](#quick-start)
-6. [Command-line interface (CLI)](#command-line-interface-cli)
+6. [Command-line interface](#command-line-interface-cli)
 7. [Training from scratch](#training-from-scratch)
 8. [Using your own datasets](#using-your-own-datasets)
 9. [Tests & linting](#tests--linting)
@@ -127,7 +127,7 @@ pytest -q   # ➜ all smoke‑tests should pass
 ---
 
 
-## Command‑line interface 
+## Command‑line interface
 
 `demo_heat2d.py` is both import‑able **and** executable:
 
