@@ -9,7 +9,7 @@
 # kbeta-transformer2d – *2-D Heat-Diffusion Transformer trained with Kourkoutas-β*  🌞🦎🚀📈
 
 > **Research companion code for the upcoming paper**  
-> “Kourkoutas‑β – Soft‑max Momentum with Adaptive Variance for Mesh‑Accelerated Deep Learning.”  
+> “Kourkoutas-β: A Sunspike-Driven Adam Optimizer with Desert Flair.”  
 > Published as [arXiv:2508.12996](http://arxiv.org/abs/2508.12996).
 >
 > This repository contains the full **2‑D data‑driven Transformer** workload that accompanies the optimiser  
