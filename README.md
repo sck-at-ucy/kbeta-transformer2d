@@ -18,12 +18,12 @@
 ---
 
 ## Table of Contents
-1. [Why a 2-D Transformer?](#why-a-2d-transformer)
+1. [Why a 2-D Transformer?](#why-a-2-d-transformer)
 2. [Model highlights](#model-highlights)
 3. [Project layout](#project-layout)
 4. [Installation](#installation)
 5. [Quick start](#quick-start)
-6. [Command-line interface](#command-line-interface-cli)
+6. [Command-line interface](#command-line-interface)
 7. [Training from scratch](#training-from-scratch)
 8. [Using your own datasets](#using-your-own-datasets)
 9. [Tests & linting](#tests--linting)
