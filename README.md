@@ -6,6 +6,7 @@
   <img src="assets/t_2dframes.png" width="300"/>
 </p>
 
+
 # kbeta‑transformer2d – *2‑D Heat‑Diffusion Transformer trained with Kourkoutas‑β*  🌞🦎🚀📈
 
 > **Research companion code for the upcoming paper**  
