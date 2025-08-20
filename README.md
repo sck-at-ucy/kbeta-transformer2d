@@ -1,5 +1,5 @@
-[![Test (dev install)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg?job=test-dev)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml)
-[![Test (wheel install)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg?job=test-wheel)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml)
+[![Test (dev install)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg?branch=main&job=test-dev)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml)
+[![Test (wheel install)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml/badge.svg?branch=main&job=test-wheel)](https://github.com/sck-at-ucy/kbeta-transformer2d/actions/workflows/ci.yml)
 
 <p align="center">
   <img src="assets/MLX_Kourkoutas.png" width="300"/>
