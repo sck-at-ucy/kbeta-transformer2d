@@ -127,7 +127,7 @@ pytest -q   # ➜ all smoke‑tests should pass
 ---
 
 
-## Command‑line interface (CLI)
+## Command‑line interface 
 
 `demo_heat2d.py` is both import‑able **and** executable:
 
