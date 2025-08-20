@@ -234,27 +234,20 @@ save_interval: 10           # only used if save_checkpoints=true
 * If no `learning_rate_schedule` is defined, the code will **fall back to a cosine schedule** controlled by `init_lr`, `target_lr`, and `ramp_steps` under the `optimizer` block.
 
 ---
-### YAML quick‑reference — common pitfalls 🔍
+### YAML quick-reference — common pitfalls 🔍
 
-| what you want         | **write it like this**         | 👀 why it matters                                                |
-|-----------------------|--------------------------------|----------------------------------------------------------------- |
-| **Booleans**          | `true`, `false` (‘yes’/‘no’ are fine too) | YAML also treats `on`, `off`, `y`, `n` as booleans 👀. Avoid surprises by sticking to `true`/`false`. |
-| **Disable a feature** | `some_flag: false` **not** `0` | `0` parses as an *integer*, not a boolean.                      |
-| **Integers**          | `epochs: 100`                  | No quotes ‑‑ unless you *really* need a string.                  |
-| **Floats**            | `lr: 1e-3`  or  `0.001`        | Scientific notation is fine – YAML keeps full precision.         |
-| **Avoid octal traps** | `mode: "0755"` (quotes!)       | Bare `0755` is parsed as **octal** → ‑493 in Python.             |
-| **Explicit null / off** | `momentum: null` (or `~`)     | Empty value **isn’t** the same as `0`. Use `null` when you mean “unset”. |
-| **Lists**             |                                | ```yml
-betas: [0.9, 0.999]
-# or the long form
-betas:
-  - 0.9
-  - 0.999
-``` |
-| **Strings that look like numbers** | `activation: "gelu"`  | Quotes stop YAML from trying to coerce things like `"1e6"` into floats. |
-| **Env‑vars / paths**  | `data_dir: "${HOME}/datasets"` | The braces/`$` need **quotes** or they’ll be treated as plain text and lose the `$`. |
-| **Indentation**       | Two spaces per level (never tabs) | YAML is indentation‑sensitive—tabs are a syntax error.           |
-
+| what you want         | **write it like this**                                                                 | 👀 why it matters                                                |
+|-----------------------|-----------------------------------------------------------------------------------------|------------------------------------------------------------------|
+| **Booleans**          | `true`, `false` (‘yes’/‘no’ are fine too)                                               | YAML also treats `on`, `off`, `y`, `n` as booleans 👀. Avoid surprises by sticking to `true`/`false`. |
+| **Disable a feature** | `some_flag: false` **not** `0`                                                          | `0` parses as an *integer*, not a boolean.                       |
+| **Integers**          | `epochs: 100`                                                                           | No quotes -- unless you *really* need a string.                  |
+| **Floats**            | `lr: 1e-3`  or  `0.001`                                                                 | Scientific notation is fine – YAML keeps full precision.          |
+| **Avoid octal traps** | `mode: "0755"` (quotes!)                                                                | Bare `0755` is parsed as **octal** → -493 in Python.              |
+| **Explicit null / off** | `momentum: null` (or `~`)                                                             | Empty value **isn’t** the same as `0`. Use `null` when you mean “unset”. |
+| **Lists**             | Inline: `betas: [0.9, 0.999]` <br> Long form: <pre>betas:\n  - 0.9\n  - 0.999</pre>     | Both notations are equivalent — pick whichever is clearer in your config. |
+| **Strings that look like numbers** | `activation: "gelu"`                                                       | Quotes stop YAML from trying to coerce things like `"1e6"` into floats. |
+| **Env-vars / paths**  | `data_dir: "${HOME}/datasets"`                                                          | The braces/`$` need **quotes** or they’ll be treated as plain text and lose the `$`. |
+| **Indentation**       | Two spaces per level (never tabs)                                                       | YAML is indentation-sensitive—tabs are a syntax error.            |
 > **Tip:** If you’re ever unsure how YAML will parse a value, run  
 > `python -c 'import yaml, sys, pprint, pathlib; pprint.pprint(yaml.safe_load(pathlib.Path("your.yml").read_text()))'`  
 > to see exactly what Python receives.
