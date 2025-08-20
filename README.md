@@ -161,10 +161,9 @@ python -m kbeta_transformer2d.demo_heat2d heat2d.yml \
 # same as above but change mesh size and disable plotting
 python -m kbeta_transformer2d.demo_heat2d heat2d.yml \
   --override geometry.dx=0.08 geometry.dy=0.08 \
-  --override viz.enabled=false storage.outdir="./OUTPUTS/run2"
+  --override viz.enabled=false storage.outdir="./OUTPUTS/run2"  
 
 # run with the *packaged* default config (no file in cwd needed)
-```bash
 python - <<'PY'
 import subprocess, importlib.resources as res
 cfg = res.files("kbeta_transformer2d.configs") / "heat2d.yml"
