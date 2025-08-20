@@ -77,6 +77,7 @@ kbeta-transformer2d
 │   └── demo_heat2d.py       # CLI entry‑point
 ├── configs/
 │   └── heat2d.yml           # default hyper‑params
+│   └── paper.yml            # paper   hyper‑params
 └── README.md                # you are here
 ```
 
@@ -129,7 +130,7 @@ python -m kbeta_transformer2d.demo_heat2d heat2d.yml --epochs=5 --optimizer=adam
 
 # same as above but change mesh size and disable plotting
 python -m kbeta_transformer2d.demo_heat2d heat2d.yml \
-  --override geometry.dx=0.002 geometry.dy=0.002 viz.enabled=false
+  --override geometry.dx=0.008 geometry.dy=0.008 viz.enabled=false
 
 # run with the *packaged* default config (no file in cwd needed)
 python - <<'PY'
